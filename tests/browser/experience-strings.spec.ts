@@ -27,6 +27,18 @@ const MOMENTS: [string, string][] = [
   ['Reservations', '/reservations'], ['Events', '/events'], ['Private parties', '/private-parties'],
 ];
 const section = (page: Page) => page.locator('#experience');
+const music = (page: Page) => page.evaluate(() => {
+  const m = (window as unknown as {__jimmyOsMusic: {getSnapshot(): {status: string; muted: boolean}; outputLevel(): number}}).__jimmyOsMusic;
+  return {...m.getSnapshot(), out: m.outputLevel()};
+});
+/** The visitor starts the music on the DJ console, then pauses it: from then on the strings are voiced. */
+async function startThenPause(page: Page) {
+  const play = section(page).locator('.dj .dj-play');
+  await play.click();
+  await expect.poll(async () => (await music(page)).status).toBe('playing');
+  await play.click();
+  await expect.poll(async () => (await music(page)).status).toBe('paused');
+}
 const audio = (page: Page) => page.evaluate(() => (window as unknown as {__audio: {contexts: number; notes: number}}).__audio);
 const layoutOf = (page: Page) => section(page).getAttribute('data-instrument');
 const cores = (page: Page, layout: string) => page.locator(`.ns-svg[data-layout="${layout}"] .ns-core`);
@@ -40,8 +52,8 @@ async function ready(page: Page) {
   await expect.poll(() => layoutOf(page)).not.toBeNull();
   const top = await page.locator('#experience .ns-stage').evaluate(el => el.getBoundingClientRect().top + scrollY);
   await page.evaluate(y => window.scrollTo({top: y, behavior: 'instant'}), Math.round(top - 140));
-  // The entrance has finished (hint shown) and its closing shimmer has rung out.
-  await expect(section(page).locator('.ns-hint')).toHaveCSS('opacity', '1', {timeout: 8000});
+  // The entrance has finished (the DJ console shown) and its closing shimmer has rung out.
+  await expect(section(page).locator('.dj')).toHaveCSS('opacity', '1', {timeout: 8000});
   const layout = (await layoutOf(page))!;
   await expect.poll(() => allAtRest(page, layout), {timeout: 12000}).toBe(true);
   return layout;
@@ -87,15 +99,18 @@ const offsetAt = (page: Page, layout: string, i: number, x: number, restY: numbe
   return best.y - restY;
 }, {layout, i, x, restY});
 
-test('follows the hero with its heading, controls and seven real moments; the hero’s Discover link leads here', async ({page, request}) => {
+test('follows the hero with its heading, the DJ console and seven real moments; the hero’s Discover link leads here', async ({page, request}) => {
   await page.setViewportSize({width: 1440, height: 900});
   await ready(page);
   expect(await page.locator('.scene-cover').evaluate(el => el.firstElementChild?.id)).toBe('experience');
   expect(await section(page).evaluate(el => el.nextElementSibling?.id)).toBe('discover');
   await expect(page.locator('.cinema-foot a').first()).toHaveAttribute('href', '#experience');
   await expect(section(page).getByRole('heading', {level: 2})).toHaveText('Every night has a rhythm.');
-  await expect(section(page).getByText('Discover the moments that make Jimmy O’s unforgettable.')).toBeVisible();
-  await expect(section(page).getByText('Explore the moments. Pluck the strings.')).toBeVisible();
+  // The DJ console replaces the old sound controls entirely (no lede, sound button, note pegs or hint remain).
+  await expect(section(page).getByRole('region', {name: 'DJ console'})).toBeVisible();
+  await expect(section(page).getByText('Discover the moments that make Jimmy O’s unforgettable.')).toHaveCount(0);
+  await expect(section(page).getByText('Explore the moments. Pluck the strings.')).toHaveCount(0);
+  await expect(section(page).getByRole('button', {name: /Enable sound|Pluck the/})).toHaveCount(0);
   const links = section(page).locator('.ns-link');
   await expect(links).toHaveCount(MOMENTS.length);
   for (const [i, [kicker, href]] of MOMENTS.entries()) {
@@ -139,33 +154,32 @@ test('pulling a string bends it; letting go rings through rest and settles; its 
   await expect.poll(() => swings.evaluateAll(els => els.every(el => el.style.transform === '')), {timeout: 4000}).toBe(true);
 });
 
-test('sound is off until enabled; then a click, a peg or a strum plays, and muting silences it again', async ({page}) => {
+test('the strings are silent until the music is started, stay silent while it plays, and are voiced (through the same context) when it is paused', async ({page}) => {
   await page.setViewportSize({width: 1440, height: 900});
   const layout = await ready(page);
-  const toggle = section(page).locator('.ns-sound');
-  await expect(toggle).toHaveText('Enable sound');
-  await expect(toggle).toHaveAttribute('aria-pressed', 'false');
-  // Plucking while muted: the string answers, but no audio exists at all.
+  // Before the visitor starts the music: the string answers with light and motion, but no audio exists at all.
   const p = await stringPoint(page, layout, 0, 0.45);
   await page.mouse.click(p.x, p.y);
-  await page.getByRole('button', {name: 'Pluck the second string (F♯3)'}).click();
   // Scrolling over the strings never plays anything either.
   await page.mouse.move(p.x, p.y);
   await page.mouse.wheel(0, 300);
   await page.mouse.wheel(0, -300);
   expect(await audio(page)).toEqual({contexts: 0, notes: 0});
 
-  await toggle.click();
-  await expect(toggle).toHaveAttribute('aria-pressed', 'true');
-  await expect(toggle).toHaveText('Sound on');
-  expect((await audio(page)).contexts).toBe(1);
-  // Keyboard: the pegs are real buttons.
-  await page.getByRole('button', {name: 'Pluck the first string (B3)'}).focus();
-  await page.keyboard.press('Enter');
-  await expect.poll(async () => (await audio(page)).notes).toBe(1);
+  // Music playing: one context (the player's); plucks stay silent so they never compete with the track.
+  await section(page).locator('.dj .dj-play').click();
+  await expect.poll(async () => (await music(page)).status).toBe('playing');
   const q = await stringPoint(page, layout, 2, 0.5);
   await page.mouse.click(q.x, q.y);
-  await expect.poll(async () => (await audio(page)).notes).toBe(2);
+  await page.waitForTimeout(200);
+  expect(await audio(page)).toEqual({contexts: 1, notes: 0});
+
+  // Paused: a click and a strum each play a note, still through that one context.
+  await section(page).locator('.dj .dj-play').click();
+  await expect.poll(async () => (await music(page)).status).toBe('paused');
+  const paused = await stringPoint(page, layout, 2, 0.5); // pressing the console scrolled it back into view
+  await page.mouse.click(paused.x, paused.y);
+  await expect.poll(async () => (await audio(page)).notes).toBe(1);
   // A strum: press on the empty stage just above the open low string and drag down across it.
   const r = await stringPoint(page, layout, 3, 0.8);
   const start = await page.evaluate(({x, y}) => {
@@ -177,21 +191,26 @@ test('sound is off until enabled; then a click, a peg or a strum plays, and muti
   await page.mouse.down();
   for (let y = start! + 8; y < r.y + 40; y += 8) await page.mouse.move(r.x, y);
   await page.mouse.up();
-  await expect.poll(async () => (await audio(page)).notes).toBe(3);
+  await expect.poll(async () => (await audio(page)).notes).toBe(2);
+  expect((await audio(page)).contexts).toBe(1);
 
-  await toggle.click();
-  await expect(toggle).toHaveAttribute('aria-pressed', 'false');
+  // The console's mute governs the strings too: a pluck reaches the output only when unmuted.
+  const loudest = async () => {let max = 0; for (let i = 0; i < 12; i++) {max = Math.max(max, (await music(page)).out); await page.waitForTimeout(25);} return max;};
   const again = await stringPoint(page, layout, 2, 0.5);
   await page.mouse.click(again.x, again.y);
-  await page.getByRole('button', {name: 'Pluck the fourth string (A2)'}).click();
-  await page.waitForTimeout(200);
-  expect((await audio(page)).notes).toBe(3);
+  expect(await loudest()).toBeGreaterThan(0.002);
+  await section(page).locator('.dj .dj-mute').click();
+  await page.waitForTimeout(600);
+  const muted = await stringPoint(page, layout, 2, 0.5);
+  await page.mouse.click(muted.x, muted.y);
+  expect(await loudest()).toBeLessThan(0.0005);
 });
 
 test('a print and a string never trigger each other: pressing a print plucks nothing; hovering it straightens it', async ({page}) => {
   await page.setViewportSize({width: 1440, height: 900});
   const layout = await ready(page);
-  await section(page).locator('.ns-sound').click();
+  await startThenPause(page);
+  const before = (await audio(page)).notes;
   const card = section(page).locator('.ns-card[data-index="3"]');
   // Hover (the caption link is the print's own link): the print turns to a neutral angle and its string answers softly.
   await card.locator('.ns-link').hover();
@@ -204,16 +223,16 @@ test('a print and a string never trigger each other: pressing a print plucks not
   await page.mouse.move(box.x + box.width / 2, box.y - 60, {steps: 6});
   await page.mouse.up();
   await page.waitForTimeout(250);
-  expect((await audio(page)).notes).toBe(0);
+  expect((await audio(page)).notes).toBe(before);
   await expect(page).toHaveURL('/');
 });
 
-test('keyboard: every control and print is reachable, with a visible focus ring', async ({page}) => {
+test('keyboard: every console control and print is reachable, with a visible focus ring', async ({page}) => {
   await page.setViewportSize({width: 1440, height: 900});
   await ready(page);
-  const sound = section(page).locator('.ns-sound');
-  await sound.focus();
-  const order = ['.ns-sound', '.ns-peg >> nth=0', '.ns-peg >> nth=1', '.ns-peg >> nth=2', '.ns-peg >> nth=3', ...MOMENTS.flatMap((_, i) => [`.ns-card[data-index="${i}"] .ns-mount`, `.ns-card[data-index="${i}"] .ns-link`])];
+  await section(page).locator('.dj [aria-label="Previous track"]').focus();
+  const order = ['.dj [aria-label="Previous track"]', '.dj .dj-play', '.dj [aria-label="Next track"]', '.dj .dj-knob', '.dj .dj-mute',
+    ...[0, 1, 2, 3, 4].map(i => `.dj-track >> nth=${i}`), ...MOMENTS.flatMap((_, i) => [`.ns-card[data-index="${i}"] .ns-mount`, `.ns-card[data-index="${i}"] .ns-link`])];
   for (const [i, selector] of order.entries()) {
     if (i) await page.keyboard.press('Tab');
     await expect(section(page).locator(selector)).toBeFocused();
@@ -229,9 +248,10 @@ test('reduced motion: the composition is complete and still; a pluck lights the 
   await page.goto('/');
   await expect.poll(() => layoutOf(page)).toBe('desktop');
   await section(page).locator('.ns-stage').scrollIntoViewIfNeeded();
-  for (const el of await section(page).locator('.ns-plate, .ns-caption, .ns-hint, .ns-title .nw > span').all()) await expect(el).toHaveCSS('opacity', '1');
+  for (const el of await section(page).locator('.ns-plate, .ns-caption, .dj, .ns-title .nw > span').all()) await expect(el).toHaveCSS('opacity', '1');
   await expect(section(page).locator('.ns-plate').first()).toHaveCSS('clip-path', 'none');
-  await page.getByRole('button', {name: 'Pluck the first string (B3)'}).click();
+  const p = await stringPoint(page, 'desktop', 0, 0.45);
+  await page.mouse.click(p.x, p.y);
   await expect.poll(() => page.locator('.ns-svg[data-layout="desktop"] .ns-string[data-string="0"]').evaluate(el => Number(el.style.getPropertyValue('--hit')))).toBeGreaterThan(0);
   expect(await allAtRest(page, 'desktop')).toBe(true);
   expect(await section(page).locator('.ns-swing').evaluateAll(els => els.every(el => el.style.transform === ''))).toBe(true);
@@ -307,24 +327,14 @@ test('no layout shift from the section while the page loads and scrolls through 
   expect(await page.evaluate(() => (window as unknown as {__cls: number}).__cls)).toBeLessThan(0.01);
 });
 
-test('off screen, a peg plays sound and light but queues no motion; touch keeps pinch-zoom', async ({page}) => {
+test('touch keeps native scrolling and pinch-zoom over the strings', async ({page}) => {
+  // (The off-screen peg check retired with the pegs: a pluck now always starts from a visible string.)
   await page.setViewportSize({width: 1440, height: 900});
   await page.goto('/');
   await page.keyboard.press('Shift');
   await expect.poll(() => layoutOf(page)).toBe('desktop');
   // Native scrolling and pinch-zoom stay available over the stage (only the double-tap delay is removed).
   await expect(section(page).locator('.ns-instrument')).toHaveCSS('touch-action', 'manipulation');
-  // At the top of the page the strings are below the fold: press a peg without scrolling to it.
-  expect(await page.evaluate(() => scrollY)).toBe(0);
-  await page.evaluate(() => document.querySelector<HTMLButtonElement>('#experience .ns-peg')!.click());
-  await expect.poll(() => page.locator('.ns-svg[data-layout="desktop"] .ns-string[data-string="0"]').evaluate(el => Number(el.style.getPropertyValue('--hit')))).toBeGreaterThan(0);
-  // Brought into view, the string is still exactly at rest: nothing was stored up to play out late.
-  const top = await page.locator('#experience .ns-stage').evaluate(el => el.getBoundingClientRect().top + scrollY);
-  await page.evaluate(y => window.scrollTo({top: y, behavior: 'instant'}), Math.round(top - 140));
-  for (let i = 0; i < 6; i++) {
-    expect(await page.locator('.ns-svg[data-layout="desktop"] .ns-string[data-string="0"] .ns-core').getAttribute('d')).toContain('C');
-    await page.waitForTimeout(50);
-  }
 });
 
 test('the light moves: strings draw on progressively and a pluck’s pulse travels along the string', async ({page}) => {
@@ -341,7 +351,8 @@ test('the light moves: strings draw on progressively and a pluck’s pulse trave
   expect(drawn.some(v => v > 0.05 && v < 0.95), `draw-on offsets ${drawn.map(v => v.toFixed(2)).join(' ')}`).toBe(true);
   // A pluck on the open low string: both pulses pass through intermediate positions.
   await expect.poll(() => allAtRest(page, 'desktop'), {timeout: 12000}).toBe(true);
-  await page.evaluate(() => document.querySelectorAll<HTMLButtonElement>('#experience .ns-peg')[3].click());
+  const low = await stringPoint(page, 'desktop', 3, 0.8);
+  await page.mouse.click(low.x, low.y);
   const pulses: number[][] = [];
   for (let i = 0; i < 12; i++) {pulses.push(await offsets('.ns-svg[data-layout="desktop"] .ns-string[data-string="3"] .ns-pulse')); await page.waitForTimeout(40);}
   const toEnd = pulses.map(p => p[0]), toStart = pulses.map(p => p[1]);

@@ -1,0 +1,226 @@
+/* Jimmy O's DJ console and mini player (DJ-CONSOLE-REPORT.md). Midnight Ember: matte graphite equipment, champagne
+   metal, amber LEDs, ember for what is live. Decorative motion is driven by the audio (see DjConsole.tsx); none of it
+   runs under reduced motion. */
+
+/* ---- Placement in "Every night has a rhythm" ------------------------------------------------------------------ */
+.ns-head{grid-template-columns:minmax(0,1fr) minmax(420px,min(500px,36vw));column-gap:clamp(24px,3.4vw,56px);align-items:center}
+.ns-aside{position:relative;padding-bottom:0}
+/* The deck sits in its own pool of stage light: a restrained warm halo and a darker floor beneath it. */
+.ns-aside::before{content:'';position:absolute;inset:-14% -12% -18%;z-index:-1;pointer-events:none;
+  background:radial-gradient(closest-side,rgb(217 113 74 / .13),rgb(126 42 31 / .07) 52%,transparent 100%)}
+.ns-aside::after{content:'';position:absolute;left:8%;right:8%;bottom:18px;height:46px;z-index:-1;pointer-events:none;border-radius:50%;
+  background:radial-gradient(closest-side,rgb(0 0 0 / .75),transparent);filter:blur(6px)}
+@media(max-width:1100px){.ns-head{grid-template-columns:1fr;align-items:start}.ns-aside{width:min(100%,580px)}}
+
+/* ---- Console housing ------------------------------------------------------------------------------------------ */
+.dj{--dj-edge:color-mix(in srgb,var(--accent-readable) 16%,transparent);container-type:inline-size;width:100%;color:var(--text);font-family:var(--font-manrope),var(--type-text)}
+.dj-deck{position:relative;display:grid;grid-template-columns:minmax(0,47%) minmax(0,1fr);grid-template-areas:'deck screen' 'deck tracks' 'controls controls' 'error error';
+  align-items:center;gap:14px 20px;padding:20px;border-radius:26px;
+  background:
+    radial-gradient(circle at 15px 15px,#34363b 0 2.2px,#08090a 2.7px 3.3px,transparent 3.8px),
+    radial-gradient(circle at calc(100% - 15px) 15px,#34363b 0 2.2px,#08090a 2.7px 3.3px,transparent 3.8px),
+    radial-gradient(circle at 15px calc(100% - 15px),#34363b 0 2.2px,#08090a 2.7px 3.3px,transparent 3.8px),
+    radial-gradient(circle at calc(100% - 15px) calc(100% - 15px),#34363b 0 2.2px,#08090a 2.7px 3.3px,transparent 3.8px),
+    linear-gradient(180deg,rgb(255 238 216 / .07),transparent 9%),
+    radial-gradient(120% 70% at 22% 0%,rgb(255 230 200 / .05),transparent 62%),
+    repeating-linear-gradient(90deg,rgb(255 255 255 / .012) 0 1px,transparent 1px 2px,rgb(0 0 0 / .05) 2px 3px),
+    linear-gradient(180deg,#1e2024,#15171a 55%,#101114);
+  border:1px solid var(--dj-edge);
+  box-shadow:inset 0 1px 0 rgb(255 240 220 / .12),inset 0 -1px 0 rgb(0 0 0 / .8),inset 0 0 0 4px rgb(0 0 0 / .18),
+    0 0 0 1px rgb(0 0 0 / .6),0 2px 0 #08090a,0 3px 0 rgb(227 199 162 / .06),0 44px 70px -34px rgb(0 0 0 / .95),
+    0 0 90px -34px color-mix(in srgb,var(--glow) calc(var(--bass,0) * 34%),transparent)}
+
+/* ---- Turntable ------------------------------------------------------------------------------------------------ */
+.dj-turntable{grid-area:deck;position:relative;width:100%;aspect-ratio:1;isolation:isolate}
+.dj-plinth-light{position:absolute;inset:2%;border-radius:50%;z-index:-1;background:radial-gradient(circle,color-mix(in srgb,var(--amber) calc(10% + var(--bass,0) * 30%),transparent) 54%,transparent 71%);filter:blur(10px)}
+.dj-platter{position:absolute;inset:3%;border-radius:50%;
+  background:
+    radial-gradient(circle,transparent 66%,rgb(0 0 0 / .6) 66.6%,transparent 67.6%),
+    repeating-conic-gradient(from 1deg,rgb(14 14 16 / .5) 0 .9deg,transparent .9deg 3deg),
+    conic-gradient(from 20deg,#67635c,#b2ab9f 9%,#5b5751 21%,#a8a196 34%,#53504a 49%,#aea79b 61%,#5d5953 74%,#a59e92 87%,#67635c);
+  box-shadow:0 0 0 1px rgb(0 0 0 / .7),0 18px 30px -12px rgb(0 0 0 / .9),0 2px 4px rgb(0 0 0 / .6)}
+.dj-platter::before{content:'';position:absolute;inset:0;border-radius:50%;background:radial-gradient(circle,transparent 69%,rgb(0 0 0 / .45) 70.5%),linear-gradient(160deg,rgb(255 248 236 / .22),transparent 40%,rgb(0 0 0 / .25))}
+.dj-record{position:absolute;inset:4.5%;border-radius:50%;will-change:transform;
+  background:
+    radial-gradient(circle,transparent 30.6%,rgb(0 0 0 / .85) 31% 31.8%,rgb(255 255 255 / .05) 32.2%,transparent 33.4%),
+    radial-gradient(circle,transparent 47%,rgb(255 255 255 / .045) 47.3%,transparent 48%,transparent 61.5%,rgb(255 255 255 / .04) 61.8%,transparent 62.6%,transparent 77%,rgb(255 255 255 / .05) 77.3%,transparent 78%),
+    conic-gradient(from 80deg,rgb(255 255 255 / .018),transparent 25%,rgb(255 255 255 / .012) 50%,transparent 75%,rgb(255 255 255 / .018)),
+    repeating-radial-gradient(circle,rgb(255 255 255 / .03) 0 .5px,transparent .5px 1.6px),
+    repeating-radial-gradient(circle,rgb(0 0 0 / .32) 0 1.2px,transparent 1.2px 4.7px),
+    radial-gradient(circle,#121214 30%,#0b0b0c 70%,#070708 98%);
+  box-shadow:inset 0 0 0 1.5px #050506,inset 0 0 0 2.5px rgb(255 255 255 / .04),inset 0 0 22px rgb(0 0 0 / .85)}
+/* The reflections belong to the room's light, so they do not turn with the record. */
+.dj-platter::after{content:'';position:absolute;inset:7.5%;border-radius:50%;pointer-events:none;mix-blend-mode:screen;
+  background:
+    conic-gradient(from 296deg,transparent 0deg,rgb(255 238 214 / .1) 14deg,rgb(255 244 228 / .16) 22deg,rgb(255 238 214 / .1) 30deg,transparent 46deg,transparent 176deg,rgb(255 226 196 / .07) 194deg,rgb(255 232 206 / .11) 202deg,transparent 222deg);
+  -webkit-mask:radial-gradient(circle,transparent 33%,#000 36%,#000 94%,transparent 99%);mask:radial-gradient(circle,transparent 33%,#000 36%,#000 94%,transparent 99%)}
+.dj-label{position:absolute;inset:31%;border-radius:50%;display:grid;place-content:center;text-align:center;gap:clamp(7px,2.6cqw,13px);
+  background:radial-gradient(circle at 34% 28%,rgb(255 220 196 / .2),transparent 45%),radial-gradient(circle at 50% 50%,#c2412e,#a9372a 60%,#7e2a1f);
+  box-shadow:inset 0 0 0 1px rgb(255 220 190 / .16),inset 0 -2px 4px rgb(60 10 4 / .35),0 0 0 1px rgb(0 0 0 / .5)}
+.dj-label b{font-family:var(--font-syne),sans-serif;font-weight:700;font-size:clamp(6px,1.9cqw,10.5px);letter-spacing:-.01em;color:#F6E9D8;line-height:1;white-space:nowrap}
+.dj-label small{white-space:nowrap;font-size:clamp(4px,1.1cqw,6px);letter-spacing:.18em;text-transform:uppercase;color:rgb(246 233 216 / .78)}
+.dj-spindle{position:absolute;left:50%;top:50%;width:4.4%;aspect-ratio:1;translate:-50% -50%;border-radius:50%;background:radial-gradient(circle at 35% 30%,#fbf6ee,#9a958c 55%,#45423e);box-shadow:0 1px 2px rgb(0 0 0 / .85),0 0 0 1px rgb(0 0 0 / .4)}
+.dj-target-light{position:absolute;left:3%;bottom:3%;width:8.5%;aspect-ratio:1;border-radius:50%;
+  background:radial-gradient(circle at 50% 40%,color-mix(in srgb,var(--spot-core) calc(40% + var(--bass,0) * 60%),#3a2b20),#3a2b20 70%);
+  box-shadow:0 0 calc(4px + var(--bass,0) * 20px) color-mix(in srgb,var(--amber) calc(20% + var(--bass,0) * 70%),transparent),inset 0 0 0 1px rgb(227 199 162 / .3)}
+.dj:not([data-playing]) .dj-target-light{background:radial-gradient(circle at 50% 40%,#5a4636,#2a221b 70%);box-shadow:inset 0 0 0 1px rgb(227 199 162 / .2)}
+
+/* Tonearm (SVG in the turntable's 100 × 100 units) */
+.dj-arm-svg{position:absolute;inset:0;width:100%;height:100%;overflow:visible;pointer-events:none;z-index:2}
+.dj-cue{fill:none;stroke:rgb(227 199 162 / .32);stroke-width:.32;opacity:0;transition:opacity .2s}
+.dj-rest rect{fill:#141518;stroke:rgb(227 199 162 / .22);stroke-width:.3}
+.dj-rest .dj-rest-cap{fill:#3a2b20;stroke:none}
+.dj-arm-shadow path{fill:none;stroke:#000;stroke-linecap:round;stroke-linejoin:round}
+.dj-arm-shadow{opacity:.55}
+.dj-weight{stroke:rgb(0 0 0 / .55);stroke-width:.3}
+.dj-tube{stroke:rgb(0 0 0 / .35);stroke-width:.15}
+.dj-shell{fill:#202227;stroke:rgb(227 199 162 / .45);stroke-width:.3}
+.dj-cartridge{fill:#0d0e10;stroke:rgb(227 199 162 / .28);stroke-width:.2}
+.dj-lift-tab{fill:none;stroke:#cfc8bc;stroke-width:.7;stroke-linecap:round}
+.dj-stylus{fill:#f2ece2}
+.dj-hub{stroke:rgb(227 199 162 / .3);stroke-width:.35}
+.dj-bearing{fill:#2a2c31;stroke:rgb(246 236 222 / .35);stroke-width:.35}
+.dj-bearing-cap{fill:#d8d1c5}
+.dj-arm-hit{fill:none;stroke:transparent;stroke-width:9;stroke-linecap:round;pointer-events:stroke;cursor:grab;touch-action:none}
+.dj-arm-svg[data-needle=held] .dj-arm-hit{cursor:grabbing}
+.dj-arm-svg[data-hover] .dj-shell,.dj-arm-svg[data-needle=held] .dj-shell{stroke:var(--accent-readable)}
+.dj-arm-svg[data-hover] .dj-lift-tab,.dj-arm-svg[data-needle=held] .dj-lift-tab{stroke:#fff6ea}
+
+/* ---- Panel ---------------------------------------------------------------------------------------------------- */
+.dj-panel{display:contents}
+.dj-screen{grid-area:screen;position:relative;min-width:0;padding:12px 14px 10px;border-radius:14px;background:linear-gradient(180deg,#070809,#0c0d10);border:1px solid rgb(227 199 162 / .12);
+  box-shadow:inset 0 2px 10px rgb(0 0 0 / .85),inset 0 0 0 1px rgb(0 0 0 / .6),0 1px 0 rgb(255 240 220 / .06)}
+.dj-screen::after{content:'';position:absolute;inset:0;border-radius:inherit;pointer-events:none;background:linear-gradient(165deg,rgb(255 255 255 / .045),transparent 32%)}
+.dj-screen-top{display:flex;justify-content:space-between;align-items:center;gap:10px;font-size:10px;font-weight:600;letter-spacing:.16em;text-transform:uppercase;color:var(--accent-readable)}
+.dj-onair{display:inline-flex;align-items:center;gap:8px;min-width:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.dj-onair i{flex:none;width:7px;height:7px;border-radius:50%;background:#3b2a24;box-shadow:inset 0 0 0 1px rgb(255 200 170 / .2)}
+.dj[data-playing] .dj-onair i{background:var(--glow);box-shadow:0 0 8px color-mix(in srgb,var(--glow) 80%,transparent),0 0 1px #fff}
+.dj[data-status=error] .dj-onair{color:#F3A28F}
+.dj-count{display:inline-flex;align-items:center;gap:8px;flex:none;font-variant-numeric:tabular-nums;color:var(--muted)}
+.dj-demo{flex:none;padding:1px 5px;border:1px solid rgb(227 199 162 / .38);border-radius:4px;font-family:var(--font-manrope),var(--type-text);font-size:8px;font-weight:600;letter-spacing:.14em;text-transform:uppercase;color:var(--accent-readable)}
+.dj-title{min-width:0;margin:9px 0 2px;font-family:var(--font-syne),sans-serif;font-size:18px;font-weight:700;letter-spacing:-.01em;line-height:1.2;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.dj-sub{margin:0;font-size:12px;line-height:1.4;color:var(--muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.dj-meter{display:block;width:100%;height:56px;margin-top:12px}
+/* Seek: a native range styled as the display's progress line (keyboard: arrows ±1 s, Page Up/Down ±10 %). */
+.dj-seek{--p:0%;display:block;width:100%;height:16px;margin:6px 0 0;padding:0;background:transparent;cursor:pointer;-webkit-appearance:none;appearance:none}
+.dj-seek::-webkit-slider-runnable-track{height:2px;border-radius:2px;background:linear-gradient(90deg,var(--amber),var(--accent-readable) var(--p),rgb(246 236 222 / .12) var(--p))}
+.dj-seek::-moz-range-track{height:2px;border-radius:2px;background:linear-gradient(90deg,var(--amber),var(--accent-readable) var(--p),rgb(246 236 222 / .12) var(--p))}
+.dj-seek::-webkit-slider-thumb{-webkit-appearance:none;width:10px;height:10px;margin-top:-4px;border-radius:50%;background:#F6E9D8;border:0;box-shadow:0 0 0 3px rgb(217 113 74 / .25)}
+.dj-seek::-moz-range-thumb{width:10px;height:10px;border-radius:50%;background:#F6E9D8;border:0;box-shadow:0 0 0 3px rgb(217 113 74 / .25)}
+.dj-seek:focus-visible{outline:2px solid var(--focus,var(--accent-readable));outline-offset:3px;border-radius:4px}
+.dj-time{display:block;margin-top:2px;font-size:11px;font-variant-numeric:tabular-nums;letter-spacing:.06em;text-align:right;color:var(--muted)}
+
+.dj-controls{grid-area:controls;display:flex;align-items:center;justify-content:space-between;gap:14px;padding-top:14px;border-top:1px solid rgb(227 199 162 / .1)}
+.dj-transport{display:flex;align-items:center;gap:10px}
+.dj-btn{display:grid;place-items:center;flex:none;width:44px;height:44px;padding:0;border-radius:50%;cursor:pointer;color:var(--text);
+  background:radial-gradient(circle at 50% 28%,#2e3035,#16181b 72%);border:1px solid rgb(227 199 162 / .22);
+  box-shadow:inset 0 1px 0 rgb(255 240 220 / .1),inset 0 -2px 4px rgb(0 0 0 / .5),0 8px 16px -10px rgb(0 0 0 / .9);
+  transition:border-color var(--duration),color var(--duration),box-shadow 120ms}
+.dj-btn svg{display:block;transition:translate 90ms}
+/* Pressing sinks the cap, never the button itself, so its hit area never moves under the pointer. */
+.dj-btn:active{box-shadow:inset 0 2px 6px rgb(0 0 0 / .75),0 3px 8px -6px rgb(0 0 0 / .9)}
+.dj-btn:active svg{translate:0 1px}
+@media(hover:hover) and (pointer:fine){.dj-btn:hover{border-color:var(--accent-readable);color:var(--accent-readable)}}
+.dj-btn:focus-visible,.dj-knob:focus-visible,.dj-track:focus-visible,.dj-mute:focus-visible{outline:2px solid var(--focus,var(--accent-readable));outline-offset:3px}
+.dj-play{width:58px;height:58px;color:#FFF4EA;background:radial-gradient(circle at 50% 28%,#cf4a35,#a9372a 70%);border-color:color-mix(in srgb,var(--glow) 60%,transparent);
+  box-shadow:inset 0 1px 0 rgb(255 226 204 / .3),inset 0 -3px 6px rgb(60 10 4 / .45),0 10px 22px -12px color-mix(in srgb,var(--glow) 90%,transparent)}
+.dj-play svg{margin-left:2px}
+.dj-play[aria-pressed=true] svg{margin-left:0}
+.dj[data-playing] .dj-play,.music-dock[data-playing] .dj-play{box-shadow:inset 0 1px 0 rgb(255 226 204 / .3),inset 0 -3px 6px rgb(60 10 4 / .45),0 0 0 4px color-mix(in srgb,var(--glow) 14%,transparent),0 0 26px -4px color-mix(in srgb,var(--glow) calc(40% + var(--bass,0) * 36%),transparent)}
+.dj-play:active{box-shadow:inset 0 3px 8px rgb(60 10 4 / .7),0 4px 10px -8px rgb(0 0 0 / .9)}
+@media(hover:hover) and (pointer:fine){.dj-play:hover{color:#fff;border-color:var(--glow)}}
+.dj-out{flex:1;min-width:0;max-width:150px;display:grid;gap:6px;font-size:9px;font-weight:600;letter-spacing:.18em;text-transform:uppercase;color:var(--muted)}
+.dj-out canvas{display:block;width:100%;height:8px}
+
+/* Volume knob: knurled rim and brushed cap, both turning with the volume. */
+.dj-knob-wrap{display:flex;align-items:center;gap:12px}
+.dj-knob{position:relative;flex:none;width:70px;height:70px;border-radius:50%;cursor:grab;touch-action:none;user-select:none;-webkit-user-select:none}
+.dj-knob:active{cursor:grabbing}
+.dj-knob-ring{position:absolute;inset:-9px;width:calc(100% + 18px);height:calc(100% + 18px);overflow:visible;pointer-events:none}
+.dj-knob-ring path{fill:none;stroke-width:3.5;stroke-linecap:round}
+.dj-knob-track{stroke:rgb(246 236 222 / .1)}
+.dj-knob-level{stroke:var(--amber);filter:drop-shadow(0 0 3px color-mix(in srgb,var(--amber) 70%,transparent));transition:stroke-dasharray 60ms linear}
+.dj-knob-wrap[data-muted] .dj-knob-level{stroke:rgb(246 236 222 / .25);filter:none}
+.dj-knob-cap{position:absolute;inset:5px;border-radius:50%;rotate:var(--turn,0deg);
+  background:
+    radial-gradient(circle at 38% 30%,rgb(255 255 255 / .22),transparent 34%),
+    repeating-radial-gradient(circle,rgb(255 255 255 / .035) 0 .6px,transparent .6px 1.8px),
+    radial-gradient(circle,#2a2c31 0 58%,transparent 59%),
+    repeating-conic-gradient(#4b4e54 0 2.5deg,#1a1b1f 2.5deg 5deg);
+  box-shadow:inset 0 0 0 1px rgb(0 0 0 / .6),inset 0 1px 1px rgb(255 255 255 / .2),0 6px 12px -4px rgb(0 0 0 / .9),0 0 0 1px rgb(0 0 0 / .7)}
+.dj-knob-cap::after{content:'';position:absolute;inset:21%;border-radius:50%;box-shadow:inset 0 1px 0 rgb(255 255 255 / .12),inset 0 -1px 2px rgb(0 0 0 / .6)}
+.dj-knob-cap i{position:absolute;left:50%;top:22%;width:3px;height:22%;translate:-50% 0;border-radius:2px;background:var(--accent-readable);box-shadow:0 0 5px color-mix(in srgb,var(--accent-readable) 55%,transparent);z-index:1}
+.dj-mute{display:grid;place-items:center;flex:none;width:36px;height:36px;padding:0;border-radius:50%;cursor:pointer;color:var(--accent-readable);background:transparent;border:1px solid rgb(227 199 162 / .24);transition:border-color var(--duration),color var(--duration),background var(--duration)}
+.dj-mute[aria-pressed=true]{color:#F3A28F;border-color:rgb(243 162 143 / .5);background:rgb(126 42 31 / .25)}
+@media(hover:hover) and (pointer:fine){.dj-mute:hover{border-color:var(--accent-readable)}}
+
+/* Track keys */
+.dj-tracks{grid-area:tracks;display:flex;gap:6px}
+.dj-track{flex:1;min-width:0;height:36px;padding:0;border-radius:8px;cursor:pointer;font-size:11px;font-weight:600;letter-spacing:.12em;font-variant-numeric:tabular-nums;color:var(--muted);
+  background:linear-gradient(180deg,#1e2024,#141619);border:1px solid rgb(227 199 162 / .14);box-shadow:inset 0 1px 0 rgb(255 240 220 / .06),0 2px 0 rgb(0 0 0 / .45);transition:color var(--duration),border-color var(--duration),box-shadow 120ms}
+.dj-track[aria-current=true]{color:var(--text);border-color:color-mix(in srgb,var(--glow) 60%,transparent);box-shadow:inset 0 1px 0 rgb(255 240 220 / .08),inset 0 -2px 0 var(--glow),0 2px 0 rgb(0 0 0 / .45)}
+.dj-track:active{box-shadow:inset 0 2px 4px rgb(0 0 0 / .6)}
+@media(hover:hover) and (pointer:fine){.dj-track:hover{color:var(--accent-readable);border-color:rgb(227 199 162 / .4)}}
+.dj-error{grid-area:error;margin:0;font-size:12px;line-height:1.5;color:#F3A28F}
+.dj-hint{display:flex;align-items:center;justify-content:center;gap:10px;margin:16px 0 0;font-size:12px;letter-spacing:.06em;color:var(--muted);text-align:center}
+.dj-hint::before{content:'';flex:none;width:18px;height:1px;background:var(--accent)}
+
+/* Compact console (phones, narrow columns): turntable beside the screen, controls and track keys below. */
+@container (max-width:479px){
+  .dj-deck{grid-template-columns:minmax(0,42%) minmax(0,1fr);grid-template-areas:'deck screen' 'controls controls' 'tracks tracks' 'error error';gap:14px;padding:14px;border-radius:22px}
+  .dj-screen{align-self:stretch;padding:10px 11px 8px}
+  .dj-title{font-size:15px;margin-top:7px}
+  .dj-sub{font-size:11px}
+  .dj-meter{height:34px;margin-top:8px}
+  .dj-knob{width:58px;height:58px}
+  .dj-play{width:54px;height:54px}
+  .dj-out{display:none}
+  .dj-count .dj-num{display:none}
+  .dj-hint{font-size:11px}
+}
+@container (max-width:340px){.dj-screen-top{font-size:9px;letter-spacing:.12em}.dj-knob-wrap{gap:8px}}
+
+/* ---- Mini player -------------------------------------------------------------------------------------------- */
+.music-dock{position:fixed;right:20px;bottom:calc(20px + env(safe-area-inset-bottom,0px));z-index:40;display:flex;align-items:center;gap:12px;
+  width:min(470px,calc(100vw - 40px));padding:10px 12px 10px 10px;border-radius:18px;color:var(--text);font-family:var(--font-manrope),var(--type-text);
+  background:color-mix(in srgb,#121417 92%,transparent);-webkit-backdrop-filter:blur(14px) saturate(1.15);backdrop-filter:blur(14px) saturate(1.15);
+  border:1px solid rgb(227 199 162 / .18);box-shadow:0 22px 46px -20px rgb(0 0 0 / .95),inset 0 1px 0 rgb(255 240 220 / .07);
+  transition:opacity .35s ease,translate .45s cubic-bezier(.2,.7,.2,1)}
+.music-dock[hidden]{display:none}
+@starting-style{.music-dock[data-shown]{opacity:0;translate:0 14px}}
+.music-dock-vinyl{flex:none;width:40px;height:40px;border-radius:50%;
+  background:radial-gradient(circle,#F6E9D8 0 6%,#a9372a 7% 30%,#0b0b0d 31%),repeating-radial-gradient(circle,#0c0c0e 0 1px,#1a1a1d 1px 2px);
+  box-shadow:inset 0 0 0 1px rgb(227 199 162 / .25),0 4px 10px -4px rgb(0 0 0 / .8);animation:dock-spin 1.8s linear infinite paused}
+.music-dock[data-playing] .music-dock-vinyl{animation-play-state:running}
+@keyframes dock-spin{to{rotate:360deg}}
+.music-dock-info{flex:1;min-width:0}
+.music-dock-title{display:flex;align-items:center;gap:6px;margin:0;font-size:13px;font-weight:600;line-height:1.3;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.music-dock-sub{margin:2px 0 0;font-size:11px;line-height:1.3;color:var(--muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.music-dock-transport{display:flex;align-items:center;gap:6px}
+.music-dock .dj-btn{width:36px;height:36px}
+.music-dock .dj-play{width:44px;height:44px}
+.dj-knob-dock{gap:6px}
+.dj-knob-dock .dj-knob{width:38px;height:38px}
+.dj-knob-dock .dj-knob-ring{inset:-6px;width:calc(100% + 12px);height:calc(100% + 12px)}
+.dj-knob-dock .dj-knob-cap{inset:3px}
+.dj-knob-dock .dj-knob-cap i{width:2px}
+.dj-knob-dock .dj-mute{width:30px;height:30px}
+.music-dock-min{display:grid;place-items:center;flex:none;width:30px;height:30px;padding:0;border:0;border-radius:50%;cursor:pointer;color:var(--muted);background:transparent}
+@media(hover:hover) and (pointer:fine){.music-dock-min:hover{color:var(--text);background:rgb(255 255 255 / .06)}}
+.music-dock-min:focus-visible,.music-dock-disc:focus-visible{outline:2px solid var(--focus,var(--accent-readable));outline-offset:3px}
+.music-dock[data-collapsed]{width:auto;padding:5px;border-radius:50%}
+.music-dock-disc{display:grid;place-items:center;width:48px;height:48px;padding:0;border:0;border-radius:50%;cursor:pointer;color:var(--accent-readable);background:radial-gradient(circle at 50% 30%,#2c2e33,#16181b 72%)}
+.music-dock[data-playing] .music-dock-disc svg{animation:dock-spin 2.4s linear infinite}
+.music-dock-spacer{height:104px}
+.music-dock-spacer[data-collapsed]{height:84px}
+@media(max-width:600px){
+  .music-dock{left:12px;right:12px;bottom:calc(12px + env(safe-area-inset-bottom,0px));width:auto;gap:8px;padding:8px 8px 8px 10px}
+  .music-dock[data-collapsed]{left:auto}
+  .music-dock .dj-btn{width:36px;height:36px}
+  .music-dock .dj-play{width:42px;height:42px}
+  .music-dock-transport{gap:4px}
+  .music-dock-spacer{height:84px}
+}
+@media(max-width:420px){.music-dock-vinyl{display:none}.music-dock-min{width:26px}}
+@media(prefers-reduced-motion:reduce){.music-dock-vinyl,.music-dock[data-playing] .music-dock-disc svg{animation:none}.music-dock{transition:none}.dj-knob-level{transition:none}.dj-cue{transition:none}}
+@media(forced-colors:active){.dj-knob-level{stroke:Highlight}.dj-track[aria-current=true]{border-color:Highlight}.dj-stylus{fill:CanvasText}}

@@ -116,8 +116,8 @@ function heroScene({root, mobile}: Scene) {
   // A quarter-cycle ease out of the static pose joins a full sine sweep with no velocity jump at the turn.
   // Distinct periods/directions keep the room from moving in unison. No animated blur or per-frame layout reads.
   const sweeps = [
-    {angle: 6.5, period: 9.4}, {angle: -8, period: 11.8}, {angle: 5.5, period: 8.6},
-    {angle: -6.8, period: 10.7}, {angle: 7.2, period: 12},
+    {angle: 7.8, period: 8.6}, {angle: -9.4, period: 10.6}, {angle: 6.4, period: 8.1},
+    {angle: -8.2, period: 9.7}, {angle: 8.6, period: 11.1},
   ];
   // The headline catches the two angled beams over it (rigs 2 and 4) as each passes a point 45% into its own sweep:
   // a glint of a second or so that slides across a couple of letters (0.2 line heights per degree of turn), a third
@@ -153,10 +153,9 @@ function heroScene({root, mobile}: Scene) {
   if (playIntro) {
     const h1 = q(hero, '.cinema-copy h1');
     const description = q(hero, '.hero-description');
-    const buttons = qa(hero, '.cinema-copy .actions .button');
     const decor = [q(hero, '.hero-dots')].filter(Boolean) as HTMLElement[];
     const footItems = qa(hero, '.cinema-foot > *');
-    const faded = [header, description, ...buttons, ...decor, ...footItems].filter(Boolean) as HTMLElement[];
+    const faded = [header, description, ...decor, ...footItems].filter(Boolean) as HTMLElement[];
     // Opening frame (replaces the pre-paint CSS state without a visible jump).
     gsap.set(faded, {opacity: 0});
     gsap.set(h1, {opacity: 0.12, filter: 'blur(16px)', scale: 1.04});
@@ -174,7 +173,7 @@ function heroScene({root, mobile}: Scene) {
       gsap.set(beamRigs, {clearProps: 'transform'});
       if (crowd) crowd.energy = 1;
       releaseSkip();
-      if (skipHadFocus) buttons[0]?.focus();
+      if (skipHadFocus) q(hero, '.cinema-foot a')?.focus({preventScroll: true});
       update();
     };
     // Timings measured from the reference (T0 = intro start); see PINTEREST-HERO-REFERENCE.md.
@@ -184,7 +183,6 @@ function heroScene({root, mobile}: Scene) {
       .to(atmosphere, {opacity: 1, duration: 1.6, ease: 'sine.inOut'}, 0.2)
       .to(h1, {opacity: 1, filter: 'blur(0px)', scale: 1, duration: 0.85, ease: 'power1.inOut'}, 1.0)
       .fromTo(description, {y: 12, filter: 'blur(6px)'}, {opacity: 1, y: 0, filter: 'blur(0px)', duration: 0.55, ease: 'power2.out'}, 1.45)
-      .fromTo(buttons, {y: 14}, {opacity: 1, y: 0, duration: 0.5, stagger: 0.08, ease: 'power3.out'}, 1.5)
       .to(header, {opacity: 1, duration: 0.5, ease: 'power1.out'}, 1.5)
       .to(decor, {opacity: 1, duration: 0.6, ease: 'power1.out'}, 1.6)
       .to(footItems, {opacity: 1, duration: 0.5, ease: 'power1.out'}, 1.9)

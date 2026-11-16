@@ -39,14 +39,14 @@ test('the crowd is drawn behind the headline area’s foot and moves to the musi
     await expect(page.locator(selector)).toHaveAttribute('aria-hidden', 'true');
     expect(await page.locator(selector).evaluate(el => getComputedStyle(el).pointerEvents)).toBe('none');
   }
-  // The crowd stays below the actions: the highest drawn pixel (a raised hand) is under the CTAs.
-  const ctaBottom = await page.locator('.cinema-copy .actions').evaluate(el => el.getBoundingClientRect().bottom);
+  // Even the highest raised hand stays clear of the description.
+  const copyBottom = await page.locator('.cinema-copy .hero-description').evaluate(el => el.getBoundingClientRect().bottom);
   const crowdTop = await page.evaluate(() => Math.min(...[...document.querySelectorAll<HTMLCanvasElement>('.hero-crowd canvas')].map(c => {
     const d = c.getContext('2d')!.getImageData(0, 0, c.width, c.height).data;
     for (let y = 0; y < c.height; y++) for (let x = 0; x < c.width; x += 3) if (d[(y * c.width + x) * 4 + 3] > 40) return c.getBoundingClientRect().top + (y * c.clientHeight) / c.height;
     return Infinity;
   })));
-  expect(crowdTop).toBeGreaterThan(ctaBottom);
+  expect(crowdTop).toBeGreaterThan(copyBottom + 24);
 });
 
 test('scroll lighting: the rigs swing and the room changes as the page rises, exactly in reverse on the way back; covered, the scene sleeps', async ({page}) => {

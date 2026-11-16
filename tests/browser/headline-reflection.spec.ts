@@ -195,6 +195,7 @@ for (const [width, height] of [[1440, 900], [390, 844]]) {
         if (row.length >= info.width * 0.12) rows.push(row.sort((a, b) => a - b)[row.length >> 1]);
       }
       expect(rows.length, `line ${line}`).toBeGreaterThan(info.height * 0.3);
+      rows.splice(0, 2); rows.splice(-2); // the glyphs' antialiased top and bottom edge rows
       // A smooth tonal curve: never a step between neighbouring rows (the old horizon jumped ~30 levels per row) …
       const steps = rows.slice(1).map((v, i) => Math.abs(v - rows[i]));
       expect(Math.max(...steps), `line ${line}: largest row-to-row step`).toBeLessThan(7);

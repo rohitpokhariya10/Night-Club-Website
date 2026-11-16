@@ -18,7 +18,7 @@ async function ready(page: Page, reduced = false) {
   await page.goto('/');
   await page.keyboard.press('Shift');
   await expect(page.locator('#experience')).toHaveAttribute('data-instrument', /desktop|tablet|mobile/);
-  await page.locator('#experience .ns-sound').focus(); // accessible reveal completes the entrance
+  await page.locator('#experience .dj .dj-play').focus(); // accessible reveal completes the entrance
   await page.locator('.ns-stage').evaluate(el => window.scrollTo({top: scrollY + el.getBoundingClientRect().top - 180, behavior: 'instant'}));
   await expect.poll(() => page.locator('.ns-svg:visible .ns-core').evaluateAll(els => els.every(el => el.getAttribute('d')?.includes('C'))), {timeout: 12000}).toBe(true);
 }
@@ -96,8 +96,13 @@ test('real pointer swing, momentum, settling, sliding, silent photo gestures, th
     AudioBufferSourceNode.prototype.start = function (...args: Parameters<typeof start>) {w.__notes++; return start.apply(this, args);};
   });
   await ready(page);
-  await page.locator('.ns-sound').click();
-  await expect(page.locator('.ns-sound')).toHaveAttribute('aria-pressed', 'true');
+  // Voice the strings: start the music on the DJ console, then pause it.
+  const status = () => page.evaluate(() => (window as unknown as {__jimmyOsMusic: {getSnapshot(): {status: string}}}).__jimmyOsMusic.getSnapshot().status);
+  await page.locator('.dj .dj-play').click();
+  await expect.poll(status).toBe('playing');
+  await page.locator('.dj .dj-play').click();
+  await expect.poll(status).toBe('paused');
+  await page.locator('.ns-stage').evaluate(el => window.scrollTo({top: scrollY + el.getBoundingClientRect().top - 180, behavior: 'instant'}));
   const c = card(page, 1);
   const original = await pivot(c);
   await drag(page, c.locator('.ns-photo'), 90);
@@ -118,10 +123,28 @@ test('real pointer swing, momentum, settling, sliding, silent photo gestures, th
   expect(await attached(page, 1)).toBeLessThan(1.5);
   expect(await page.evaluate(() => (window as unknown as {__notes: number}).__notes)).toBe(0);
   await expect(page).toHaveURL('/');
-  await page.locator('.ns-peg').first().click();
+  // A pluck on an open stretch of string plays one note…
+  const open = await page.evaluate(() => {
+    const hit = document.querySelector<SVGPathElement>('.ns-svg:not([hidden]) .ns-string[data-string="0"] .ns-hit, .ns-svg .ns-string[data-string="0"] .ns-hit')!;
+    const svgs = [...document.querySelectorAll<SVGSVGElement>('.ns-svg')].filter(s => s.getBoundingClientRect().width > 0);
+    const path = svgs[0].querySelector<SVGPathElement>('.ns-string[data-string="0"] .ns-hit') ?? hit;
+    const m = path.ownerSVGElement!.getScreenCTM()!, length = path.getTotalLength();
+    for (let f = 0.1; f < 0.95; f += 0.03) {
+      const pt = path.getPointAtLength(length * f), x = m.a * pt.x + m.c * pt.y + m.e, y = m.b * pt.x + m.d * pt.y + m.f;
+      if (y > 120 && y < innerHeight - 40 && document.elementFromPoint(x, y)?.closest('.ns-string')) return {x, y};
+    }
+    return null;
+  });
+  expect(open, 'an open stretch of string on screen').not.toBeNull();
+  await page.mouse.click(open!.x, open!.y);
   await expect.poll(() => page.evaluate(() => (window as unknown as {__notes: number}).__notes)).toBe(1);
-  await page.locator('.ns-sound').click();
-  await expect(page.locator('.ns-sound')).toHaveAttribute('aria-pressed', 'false');
+  // …and while the music plays again, plucks stay silent.
+  await page.locator('.dj .dj-play').click();
+  await expect.poll(status).toBe('playing');
+  await page.mouse.click(open!.x, open!.y);
+  await page.waitForTimeout(200);
+  expect(await page.evaluate(() => (window as unknown as {__notes: number}).__notes)).toBe(1);
+  await page.locator('.dj .dj-play').click();
   await c.locator('.ns-link').click();
   await expect(page).toHaveURL('/drink-menu');
 });

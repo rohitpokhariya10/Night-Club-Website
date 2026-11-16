@@ -27,8 +27,8 @@ for (const width of [390, 768, 1024, 1440]) test(`hero and gallery at ${width}px
   await expect(page.locator('.cinema-copy .hero-eyebrow')).toHaveCount(0);
   await expect(page.locator('.cinema-hero')).not.toContainText('COASTAL SOUL. LATE-NIGHT ENERGY.');
   await expect(page.locator('.cinema-copy .hero-description')).toHaveText('Come for the drinks. Stay for the music. Leave with a story.');
-  await expect(page.locator('.cinema-copy').getByRole('link', {name: 'EXPLORE NIGHTLIFE'})).toHaveAttribute('href', '/nightlife');
-  await expect(page.locator('.cinema-copy').getByRole('link', {name: 'BOOK A TABLE'})).toHaveAttribute('href', '/reservations');
+  await expect(page.locator('.cinema-copy .actions, .cinema-copy .button')).toHaveCount(0);
+  await expect(page.locator('.header-book')).toHaveAttribute('href', '/reservations');
   // The animated light hero replaces the old background video.
   await expect(page.locator('video')).toHaveCount(0);
   await expect(page.locator('.hero-beam:visible')).toHaveCount(width <= 700 ? 4 : 5);
@@ -38,7 +38,7 @@ for (const width of [390, 768, 1024, 1440]) test(`hero and gallery at ${width}px
   await expect(page.locator('.cinema-hero')).toHaveAttribute('data-ambient', 'running');
   await expect(page.locator('.cinema-copy h1')).toHaveCSS('opacity', '1');
   expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(true);
-  for (const selector of ['.cinema-copy h1', '.cinema-copy .actions']) {
+  for (const selector of ['.cinema-copy h1', '.cinema-copy .hero-description']) {
     const box = await page.locator(selector).boundingBox();
     expect(box!.x).toBeGreaterThanOrEqual(0);
     expect(box!.x + box!.width).toBeLessThanOrEqual(width);
@@ -145,7 +145,7 @@ test('reduced motion reveals everything and viewer stays functional, including p
   await expect(first).toBeFocused();
 });
 
-test('Save-Data loads no video and keeps usable CTAs', async ({page}) => {
+test('Save-Data loads no video and keeps header navigation usable', async ({page}) => {
   const videos: string[] = [];
   page.on('request', request => {if (request.url().endsWith('.mp4')) videos.push(request.url());});
   await page.addInitScript(() => Object.defineProperty(navigator, 'connection', {value: Object.assign(new EventTarget(), {saveData: true})}));
@@ -155,10 +155,10 @@ test('Save-Data loads no video and keeps usable CTAs', async ({page}) => {
   expect(videos).toEqual([]);
   await expect(page.locator('.hero-orb')).toHaveCount(0);
   await expect(page.locator('.header .logo')).toBeVisible();
-  await page.locator('.cinema-copy').getByRole('link', {name: 'EXPLORE NIGHTLIFE'}).click();
+  await page.locator('.header nav a[href="/nightlife"]').click();
   await expect(page).toHaveURL('/nightlife');
   await page.goBack();
-  await page.locator('.cinema-copy').getByRole('link', {name: 'BOOK A TABLE'}).click();
+  await page.locator('.header-book').click();
   await expect(page).toHaveURL('/reservations');
 });
 
@@ -172,7 +172,7 @@ test('server-rendered hero and gallery remain visible without JavaScript', async
   await expect(page.locator('.hero-orb')).toHaveCount(0);
   await expect(page.locator('.header .logo')).toBeVisible();
   await expect(page.locator('.hero-skip')).toBeHidden();
-  await expect(page.locator('.cinema-copy .actions a')).toHaveCount(2);
+  await expect(page.locator('.cinema-copy .actions a')).toHaveCount(0);
   await page.goto('/gallery');
   await expect(page.locator('.gallery-tile')).toHaveCount(9);
   await settleImages(page);
@@ -228,7 +228,7 @@ test('the animated hero replaces the background video; no video loads until the 
   await expect(page.locator('video')).toHaveCount(0);
   expect(videos).toEqual([]);
   await expect(page.locator('.hero-description')).toBeVisible();
-  await page.locator('.cinema-copy').getByRole('link', {name: 'EXPLORE NIGHTLIFE'}).click();
+  await page.locator('.header nav a[href="/nightlife"]').click();
   await expect(page).toHaveURL('/nightlife');
 });
 

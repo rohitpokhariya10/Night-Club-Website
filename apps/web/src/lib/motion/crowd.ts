@@ -11,7 +11,7 @@ import gsap from 'gsap';
  * The layout is seeded, so every visit sees the same crowd. Runs only while started (the hero is visible).
  */
 export const BPM = 124;
-type Pose = 'down' | 'up' | 'pump' | 'sway' | 'phone';
+type Pose = 'down' | 'up' | 'pump' | 'sway' | 'reach' | 'groove' | 'phone';
 type Hair = 'short' | 'long' | 'bun' | 'cap' | 'curls';
 type Figure = {
   x: number; base: number; s: number; pose: Pose; side: 1 | -1; phase: number; half: boolean;
@@ -46,22 +46,24 @@ function layout(w: number, h: number, mobile: boolean): {back: Row[]; front: Row
     const figures: Figure[] = [];
     for (let x = -step * 0.4 + rand() * step * 0.5; x < w + step * 0.6; x += step * (0.72 + rand() * 0.56)) {
       figures.push({
-        x, s: s * (0.88 + rand() * 0.24), base: baseline * h + rand() * s * 0.07, pose: pick(poses), side: rand() < 0.5 ? -1 : 1,
+        x, s: s * (0.84 + rand() * 0.3), base: baseline * h + rand() * s * 0.11, pose: pick(poses), side: rand() < 0.5 ? -1 : 1,
         phase: rand() * Math.PI * 2, half: rand() < 0.55, shoulders: 0.17 + rand() * 0.045, head: 0.072 + rand() * 0.014,
         face: 0.76 + rand() * 0.15,
         hair: pick<Hair>([['short', 0.32], ['long', 0.28], ['bun', 0.13], ['cap', 0.1], ['curls', 0.17]]), lean: (rand() - 0.5) * 0.1,
         motion: 0.55 + rand() * 0.45, tempo: 0.92 + rand() * 0.16,
         elbow: (rand() - 0.5) * 18, wrist: (rand() - 0.5) * 12,
         // Selected lit edges; most figures remain dark instead of wearing an orange outline.
-        rim: rand() > 0.48 ? 0.24 + rand() * 0.38 : 0.06,
+        rim: rand() > 0.48 ? 0.28 + rand() * 0.4 : 0.06,
         phone: -1,
       });
     }
     return {figures, color, rim, motion, detail};
   };
-  const far = row(mobile ? 0.42 : 0.38, mobile ? 0.7 : 0.86, 0.36, [['down', 0.58], ['up', 0.08], ['pump', 0.15], ['sway', 0.19]], 'rgb(32, 25, 23)', 'rgba(239, 190, 140, 0.34)', 0.65);
-  const mid = row(mobile ? 0.6 : 0.56, mobile ? 0.88 : 1.0, 0.4, [['down', 0.56], ['pump', 0.16], ['up', 0.08], ['sway', 0.2]], 'rgb(14, 12, 12)', 'rgba(217, 150, 103, 0.38)', 1, true);
-  const near = row(0.86, mobile ? 1.16 : 1.24, 0.51, [['down', 0.94], ['sway', 0.06]], 'rgb(5, 5, 6)', 'rgba(217, 113, 74, 0.16)', 0.35);
+  // Tighter spacing adds people even though the larger canvas makes each figure taller. Staggered baselines expose
+  // the smaller, warmer back row above the middle row; close heads still fall into soft, near-black foreground.
+  const far = row(mobile ? 0.42 : 0.38, mobile ? 0.67 : 0.75, 0.25, [['down', 0.34], ['up', 0.08], ['pump', 0.16], ['sway', 0.16], ['reach', 0.1], ['groove', 0.16]], 'rgb(35, 27, 24)', 'rgba(239, 190, 140, 0.38)', 0.7);
+  const mid = row(mobile ? 0.62 : 0.58, mobile ? 0.88 : 0.98, 0.30, [['down', 0.38], ['pump', 0.15], ['up', 0.06], ['sway', 0.17], ['reach', 0.08], ['groove', 0.16]], 'rgb(14, 12, 12)', 'rgba(217, 150, 103, 0.42)', 1, true);
+  const near = row(0.88, mobile ? 1.16 : 1.24, 0.43, [['down', 0.88], ['groove', 0.08], ['sway', 0.04]], 'rgb(5, 5, 6)', 'rgba(217, 113, 74, 0.16)', 0.35);
   // A few separated midground hands hold phones; never floating between figures or outside the viewport.
   const candidates = mid.figures.filter(f => f.x > w * 0.08 && f.x < w * 0.92);
   const phones = Math.min(mobile ? 2 : 4, candidates.length);
@@ -197,9 +199,11 @@ function body(ctx: CanvasRenderingContext2D, f: Figure, x: number, base: number,
     // Angles mirror for the left arm; -90 is straight up, 90 straight down.
     const deg = (outward: number) => (side === 1 ? outward : 180 - outward);
     const lead = side === f.side;
-    if (f.pose === 'up') arm(side, deg(-44 + f.elbow - e * 5 * half), deg(-112 + f.wrist + e * 7 * half));
+    if (f.pose === 'up') arm(side, deg((lead ? -44 : -34) + f.elbow - e * 5 * half), deg(-112 + f.wrist + e * 7 * Math.sin(beat / 2 + (lead ? 0 : 0.7))));
     else if (f.pose === 'pump' && lead) arm(side, deg(-32 + f.elbow), deg(-99 + f.wrist - e * 14 * pump));
     else if (f.pose === 'sway' && lead) arm(side, deg(-18 + f.elbow + e * 9 * half), deg(-92 + f.wrist + e * 12 * Math.sin(beat / 2 + 0.9)));
+    else if (f.pose === 'reach' && lead) arm(side, deg(-64 + f.elbow + e * 5 * half), deg(-82 + f.wrist + e * 8 * Math.sin(beat / 2 + 0.6)));
+    else if (f.pose === 'groove') arm(side, deg(48 + f.elbow + e * 7 * half), deg((lead ? -52 : -24) + f.wrist - e * 12 * Math.sin(beat / 2 + side * 0.8)));
     else if (f.pose === 'phone' && lead) arm(side, deg(-36 + f.elbow + e * 3 * half), deg(-102 + f.wrist + e * 4 * half), true);
     else arm(side, deg(72 + f.elbow - e * 3 * half), deg(103 + f.wrist));
   }

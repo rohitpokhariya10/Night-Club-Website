@@ -109,24 +109,31 @@ export class PluckSynth {
   private buffers: AudioBuffer[] = [];
   private voices: Voice[] = [];
   private suspendTimer = 0;
+  private compressor: DynamicsCompressorNode | null = null;
   enabled = false;
 
-  constructor(private readonly frequencies: readonly number[]) {}
+  /**
+   * `shared` (optional) supplies another context and destination to play into: the site's music player, so the
+   * strings share its one context and follow its volume knob. A shared context is never suspended or closed here.
+   */
+  constructor(private readonly frequencies: readonly number[], private readonly shared?: () => {context: AudioContext; destination: AudioNode} | null) {}
 
-  /** Must be called from a user gesture (the sound button). Creates the context on first use. */
-  async enable() {
+  /** Builds the voice (renders the four notes, wires the graph) without sounding. Safe to call ahead of time. */
+  prepare() {
+    if (this.ctx) return;
     const Context = audioContextClass();
-    if (!Context) throw new Error('Web Audio is not available');
-    clearTimeout(this.suspendTimer);
-    if (!this.ctx) {
-      const ctx = new Context({latencyHint: 'interactive'});
+    const shared = this.shared?.() ?? null;
+    if (!Context && !shared) throw new Error('Web Audio is not available');
+    {
+      const ctx = shared?.context ?? new Context!({latencyHint: 'interactive'});
       const compressor = ctx.createDynamicsCompressor();
       compressor.threshold.value = -20;
       compressor.knee.value = 14;
       compressor.ratio.value = 4;
       compressor.attack.value = 0.003;
       compressor.release.value = 0.25;
-      compressor.connect(ctx.destination);
+      compressor.connect(shared?.destination ?? ctx.destination);
+      this.compressor = compressor;
       const master = ctx.createGain();
       master.gain.value = 0;
       master.connect(compressor);
@@ -145,11 +152,20 @@ export class PluckSynth {
       this.master = master;
       this.send = send;
     }
-    await this.ctx.resume();
-    const now = this.ctx.currentTime;
+  }
+
+  /** Must follow a user gesture (a running shared context counts). */
+  async enable() {
+    clearTimeout(this.suspendTimer);
+    this.prepare();
+    const ctx = this.ctx;
+    if (!ctx) throw new Error('Web Audio is not available');
+    // Live at once (a pluck right after this call must sound); the fade-in is scheduled on the context's clock.
+    const now = ctx.currentTime;
     hold(this.master!.gain, now);
     this.master!.gain.setTargetAtTime(LEVEL, now, 0.04);
     this.enabled = true;
+    await ctx.resume();
   }
 
   /** Fades out and suspends the context (no audio processing while muted). */
@@ -161,6 +177,7 @@ export class PluckSynth {
     hold(this.master.gain, now);
     this.master.gain.setTargetAtTime(0, now, 0.04);
     clearTimeout(this.suspendTimer);
+    if (this.shared) return; // the shared context belongs to the music player
     this.suspendTimer = window.setTimeout(() => {
       if (!this.enabled) void ctx.suspend().catch(() => {});
     }, 300);
@@ -223,8 +240,10 @@ export class PluckSynth {
   dispose() {
     clearTimeout(this.suspendTimer);
     this.enabled = false;
+    this.voices.forEach(voice => {try {voice.source.stop();} catch {/* already stopped */}});
     this.voices = [];
-    void this.ctx?.close().catch(() => {});
+    if (this.shared) this.compressor?.disconnect(); else void this.ctx?.close().catch(() => {});
+    this.compressor = null;
     this.ctx = null;
     this.master = null;
     this.send = null;

@@ -51,7 +51,7 @@ test('Skip intro finishes immediately and keeps keyboard focus in the hero', asy
   await page.keyboard.press('Enter');
   await expect(hero(page)).not.toHaveClass(/is-intro/);
   expect((await snapshot(page)).h1).toBe(1);
-  await expect(page.locator('.cinema-copy').getByRole('link', {name: 'EXPLORE NIGHTLIFE'})).toBeFocused();
+  await expect(page.locator('.cinema-foot a')).toBeFocused();
   await expect(skip).toBeHidden();
 });
 
@@ -92,7 +92,7 @@ test('without JavaScript the finished composition and light are server-rendered'
   await expect(page.locator('.hero-orb')).toHaveCount(0);
   expect(s.h1).toBe(1);
   await expect(page.getByRole('button', {name: 'Skip intro'})).toBeHidden();
-  await expect(page.locator('.cinema-copy .actions a')).toHaveCount(2);
+  await expect(page.locator('.cinema-copy .actions a')).toHaveCount(0);
   await context.close();
 });
 

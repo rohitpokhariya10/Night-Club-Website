@@ -31,8 +31,8 @@ for (const [width, height] of [[1440, 900], [1920, 1080], [768, 1024], [1024, 90
     await expect(page.locator('.hero-beam:visible')).toHaveCount(width <= 700 ? 4 : 5);
     await expect(page.locator('.hero-crowd canvas')).toHaveCount(2);
     await expect(page.locator('h1')).toHaveText('DEL MAR AFTER DARK.');
-    await expect(page.locator('.cinema-copy .button').first()).toHaveAttribute('href', '/nightlife');
-    await expect(page.locator('.cinema-copy .button').last()).toHaveAttribute('href', '/reservations');
+    await expect(page.locator('.cinema-copy .actions, .cinema-copy .button')).toHaveCount(0);
+    await expect(page.locator('.header-book')).toHaveAttribute('href', '/reservations');
     expect(await page.evaluate(() => document.documentElement.scrollWidth)).toBeLessThanOrEqual(width);
     const copy = await page.locator('.cinema-copy').boundingBox();
     expect(copy!.x).toBeGreaterThanOrEqual(0);
@@ -55,9 +55,9 @@ for (const [width, height] of [[1440, 900], [390, 844]]) {
       await mkdir(`${output}/recordings`, {recursive: true});
       await mkdir(`${output}/measurements`, {recursive: true});
       await page.goto('/');
-      await page.screenshot({path: `${output}/after/intro-${width}.png`});
+      await page.screenshot({path: `${output}/after/intro-${width}.png`, caret: 'initial'});
       await expect(page.locator('.cinema-hero')).toHaveAttribute('data-ambient', 'running');
-      // 28 seconds covers two full cycles of the slowest 12-second sweep plus its 3-second entry.
+      // 28 seconds covers two full cycles of the slowest 11.1-second sweep plus its entry.
       const samples = await page.evaluate(async () => {
         const lights = [...document.querySelectorAll('.hero-beam > i')].filter(el => getComputedStyle(el.parentElement!).display !== 'none');
         const started = performance.now();
@@ -72,7 +72,7 @@ for (const [width, height] of [[1440, 900], [390, 844]]) {
         return samples;
       });
       await writeFile(`${output}/measurements/idle-${width}.json`, JSON.stringify(samples, null, 2));
-      const cap = width <= 700 ? 5.21 : 8.01;
+      const cap = width <= 700 ? 6.12 : 9.41;
       for (let beam = 0; beam < samples[0].angles.length; beam++) {
         const values = samples.map(sample => sample.angles[beam]);
         expect(Math.min(...values)).toBeLessThan(-3);
@@ -123,8 +123,8 @@ for (const [width, height] of [[1440, 900], [390, 844]]) {
       await page.waitForTimeout(650);
       expect(await angles(page)).not.toEqual(still);
       // Route teardown and remount keep one scene and one set of lights, without replaying the intro.
-      await page.locator('.cinema-copy .button').first().click();
-      await expect(page).toHaveURL('/nightlife');
+      await page.locator('.header-book').click();
+      await expect(page).toHaveURL('/reservations');
       await expect(page.locator('.hero-beam')).toHaveCount(0);
       await page.getByRole('link', {name: 'Jimmy O’s home', exact: true}).click();
       await expect(page.locator('.hero-beam')).toHaveCount(5);

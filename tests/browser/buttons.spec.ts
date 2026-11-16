@@ -77,7 +77,6 @@ test('hovering a control moves its arrow the way it points, then eases it back (
   await page.setViewportSize({width: 1440, height: 900});
   await home(page);
   await checkHover(page, page.locator('.cinema-foot a[href="#experience"]'), 'down', 'Discover Jimmy O’s');
-  await checkHover(page, page.locator('.cinema-copy .button').first(), 'up-right', 'hero primary button');
   await checkHover(page, page.locator('.header-book'), 'up-right', 'Book a Table (header)');
   for (const [selector, dir, name] of [
     ['.fd-arrow[aria-label="Next category"]', 'right', 'next category'],
@@ -154,8 +153,7 @@ test('the destinations of the directional CTAs are unchanged', async ({page}) =>
     ['.text-link', '/catering'], ['.home-gallery .button', '/gallery'], ['.ft-top', '#top'],
   ];
   for (const [selector, href] of expected) await expect(page.locator(selector).first(), selector).toHaveAttribute('href', href);
-  const hero = await page.locator('.cinema-copy .button').evaluateAll(els => els.map(el => [el.textContent?.trim(), el.getAttribute('href')]));
-  expect(hero).toEqual([['EXPLORE NIGHTLIFE', '/nightlife'], ['BOOK A TABLE', '/reservations']]);
+  await expect(page.locator('.cinema-copy .button')).toHaveCount(0);
   // (Back to top's smooth scroll is covered in footer.spec.ts; following a link is covered below and in site.spec.ts.)
   await page.locator('.header-book').click();
   await expect(page).toHaveURL('/reservations');

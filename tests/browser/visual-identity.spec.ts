@@ -75,9 +75,9 @@ test('Midnight Ember: ember is the action colour with an AA label, champagne car
   await page.setViewportSize({width: 1440, height: 900});
   await page.goto('/');
   await page.keyboard.press('Shift');
-  const hero = page.locator('.cinema-copy .button').first();
-  await expect(hero).toHaveCSS('background-color', 'rgb(194, 65, 46)');
-  expect(await contrast(page, '.cinema-copy .button:not(.outline)')).toBeGreaterThanOrEqual(4.5);
+  const action = page.locator('.celebrations .button').first();
+  await expect(action).toHaveCSS('background-color', 'rgb(194, 65, 46)');
+  expect(await contrast(page, '.celebrations .button:not(.outline)')).toBeGreaterThanOrEqual(4.5);
   // Every eyebrow on the homepage shares font, size, weight, tracking and colour.
   const eyebrows = await page.locator('main :is(.script, .eyebrow, .ns-eyebrow, .night-out-eyebrow, .fd-eyebrow, .sig-pill, .lens-eyebrow)').evaluateAll(els => els.map(el => {
     const s = getComputedStyle(el);
@@ -90,7 +90,7 @@ test('Midnight Ember: ember is the action colour with an AA label, champagne car
   await expect(page.locator('.night-out-index')).toHaveText('');
 });
 
-test('the hero keeps the headline clear: no connector lines or captions around it, and the headline and actions lead', async ({page}) => {
+test('the hero keeps the headline clear: no connector lines or captions around it, and the headline and supporting copy lead', async ({page}) => {
   await page.setViewportSize({width: 1440, height: 900});
   await page.goto('/');
   await page.keyboard.press('Shift');

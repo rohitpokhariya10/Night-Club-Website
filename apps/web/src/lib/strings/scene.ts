@@ -33,7 +33,7 @@ export function stringsScene({section, svg, layout, instrument, mobile}: {sectio
     .fromTo(lights, {opacity: 0}, {opacity: 1, duration: 1.6, ease: 'power1.out', clearProps: 'opacity'}, 0)
     .from(q('.ns-eyebrow'), {clipPath: 'inset(0% 100% 0% 0%)', duration: 1, ease: 'power3.inOut', clearProps: 'clipPath'}, 0.05)
     .from(qa('.ns-title .nw > span'), {yPercent: 112, rotate: 4, duration: 1.1, stagger: 0.07, clearProps: 'transform'}, 0.12)
-    .from(qa('.ns-lede, .ns-controls'), {y: 18, opacity: 0, duration: 0.8, stagger: 0.08, ease: EASE.entrance, clearProps: 'transform,opacity'}, 0.45);
+    .from(q('.dj'), {y: 18, opacity: 0, duration: 0.9, ease: EASE.entrance, clearProps: 'transform,opacity'}, 0.45);
 
   qa('.ns-string', svg).forEach((group, i) => {
     entrance.fromTo(qa('.ns-air, .ns-halo, .ns-core', group),
@@ -51,7 +51,6 @@ export function stringsScene({section, svg, layout, instrument, mobile}: {sectio
       .call(() => instrument.swingCard(index, j % 2 ? 3.4 : -3.4), [], at + 0.3)
       .from(el.querySelector('.ns-caption'), {opacity: 0, y: 6, duration: 0.6, ease: EASE.entrance, clearProps: 'opacity,transform'}, at + 0.62);
   });
-  entrance.from(q('.ns-hint'), {opacity: 0, y: 8, duration: 0.7, ease: EASE.entrance, clearProps: 'opacity,transform'}, '>-0.15');
   registry.set(section, [entrance]);
 
   // Plays once when the section arrives; jumping past it finishes it, so nothing is ever left hidden.
