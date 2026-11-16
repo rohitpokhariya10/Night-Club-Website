@@ -39,8 +39,8 @@ test('the crowd is drawn behind the headline area’s foot and moves to the musi
     await expect(page.locator(selector)).toHaveAttribute('aria-hidden', 'true');
     expect(await page.locator(selector).evaluate(el => getComputedStyle(el).pointerEvents)).toBe('none');
   }
-  // Even the highest raised hand stays clear of the description.
-  const copyBottom = await page.locator('.cinema-copy .hero-description').evaluate(el => el.getBoundingClientRect().bottom);
+  // Even the highest raised hand stays clear of the copy and its booking action.
+  const copyBottom = await page.locator('.cinema-copy .hero-cta').evaluate(el => el.getBoundingClientRect().bottom);
   const crowdTop = await page.evaluate(() => Math.min(...[...document.querySelectorAll<HTMLCanvasElement>('.hero-crowd canvas')].map(c => {
     const d = c.getContext('2d')!.getImageData(0, 0, c.width, c.height).data;
     for (let y = 0; y < c.height; y++) for (let x = 0; x < c.width; x += 3) if (d[(y * c.width + x) * 4 + 3] > 40) return c.getBoundingClientRect().top + (y * c.clientHeight) / c.height;
@@ -89,8 +89,8 @@ test('reduced motion: the scene is complete and still (the crowd standing, the l
   }
 });
 
-test('no layout shift from the hero scene while it loads, plays its intro and settles', async ({page}) => {
-  await page.setViewportSize({width: 1440, height: 900});
+for (const [width, height] of [[1440, 900], [390, 844]]) test(`no layout shift from the hero scene while it loads, plays its intro and settles at ${width}px`, async ({page}) => {
+  await page.setViewportSize({width, height});
   await page.addInitScript(() => {
     const w = window as unknown as {__cls: number};
     w.__cls = 0;

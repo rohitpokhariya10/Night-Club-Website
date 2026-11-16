@@ -21,14 +21,15 @@ for (const [width, height] of [[1440, 900], [1024, 900], [768, 1024], [390, 844]
     await expect(page.locator('.hero-orb, .hero-orb-ring, .hero-orb-logo, .hero-eyebrow')).toHaveCount(0);
     await expect(page.locator('.cinema-hero')).not.toContainText('COASTAL SOUL. LATE-NIGHT ENERGY.');
     await expect(page.locator('.cinema-hero')).not.toContainText('DEL MAR, CALIFORNIA — GOOD TIMES LIVE HERE');
-    await expect(page.locator('h1')).toHaveText('DEL MAR AFTER DARK.');
-    await expect(page.locator('.hero-description')).toHaveText('Come for the drinks. Stay for the music. Leave with a story.');
+    await expect(page.locator('h1')).toHaveText('DEL MAR. TURN IT UP.');
+    await expect(page.locator('.hero-description')).toHaveText('Come for the drinks. Stay for the music. Make the night yours.');
     await expect(page.locator('.cinema-copy .actions, .cinema-copy .button')).toHaveCount(0);
+    await expect(page.locator('.cinema-copy .hero-cta')).toHaveCount(1);
     await expect(page.locator('.header-book')).toHaveAttribute('href', '/reservations');
     await expect(page.locator('.header .logo')).toBeVisible();
     await expect(page.getByRole('link', {name: 'Jimmy O’s home', exact: true})).toHaveAttribute('href', '/');
     expect(await page.evaluate(() => document.documentElement.scrollWidth)).toBeLessThanOrEqual(width);
-    for (const selector of ['.cinema-copy h1', '.cinema-copy .hero-description']) {
+    for (const selector of ['.cinema-copy h1', '.cinema-copy .hero-description', '.cinema-copy .hero-cta']) {
       const box = await page.locator(selector).boundingBox();
       expect(box!.x).toBeGreaterThanOrEqual(0);
       expect(box!.x + box!.width).toBeLessThanOrEqual(width);
@@ -44,8 +45,9 @@ for (const [width, height] of [[1440, 900], [1024, 900], [768, 1024], [390, 844]
       }
       return Infinity;
     })));
-    const description = await page.locator('.cinema-copy .hero-description').boundingBox();
-    expect(crowdTop).toBeGreaterThan(description!.y + description!.height + 24);
+    // Even the highest raised hand stays clear of the booking action, the lowest piece of the copy.
+    const action = await page.locator('.cinema-copy .hero-cta').boundingBox();
+    expect(crowdTop).toBeGreaterThan(action!.y + action!.height + 24);
     expect(crowdTop).toBeLessThan(height);
     await page.screenshot({path: `artifacts/hero-cleanup/after-${width}.png`});
     if (width === 1440) {
@@ -77,6 +79,8 @@ for (const width of [1440, 390]) for (const reducedMotion of ['no-preference', '
     await expect(page.locator('main#main')).toBeFocused();
     await expect(page).toHaveURL(/\/#main$/);
     await expect(skip).toHaveCSS('clip-path', 'inset(50%)');
+    await page.keyboard.press('Tab');
+    await expect(page.locator('.cinema-copy .hero-cta')).toBeFocused();
     await page.keyboard.press('Tab');
     await expect(page.locator('.cinema-foot a')).toBeFocused();
     if (reducedMotion === 'reduce') {
