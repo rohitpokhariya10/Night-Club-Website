@@ -29,8 +29,8 @@
 .hero-line-text{display:block;width:max-content;max-width:100%}
 .cinema-copy .hero-description{font-size:14px;line-height:1.85;max-width:360px;color:color-mix(in srgb,var(--text) 94%,var(--accent));margin:30px 0}
 .hero-description>span{display:block}
-.cinema-copy .actions{gap:14px;flex-wrap:wrap}
-.cinema-copy .button{font-size:10px;letter-spacing:.07em;min-height:54px;padding:16px 22px;gap:24px}
+.cinema-copy .actions{gap:16px;flex-wrap:wrap}
+.cinema-copy .button{font-size:11px;letter-spacing:.11em;min-height:56px;padding:17px 24px 17px 26px;gap:22px}
 .cinema-copy .button.outline{background:color-mix(in srgb,var(--background) 22%,transparent);border-color:color-mix(in srgb,var(--accent-readable) 60%,transparent)}
 @media(hover:hover) and (pointer:fine){.cinema-copy .button.outline:hover{background:color-mix(in srgb,var(--button) 45%,transparent)}}
 .cinema-foot{position:absolute;bottom:32px;left:7%;right:7%;display:flex;justify-content:flex-end;align-items:center;gap:20px;font-size:9px;letter-spacing:.14em;color:color-mix(in srgb,var(--text) 86%,var(--accent))}
@@ -82,8 +82,8 @@
  
  .cinema-copy h1{font-size:clamp(40px,10.7vw,70px);line-height:1.2}
  .cinema-copy .hero-description{font-size:13px;max-width:300px;margin:27px 0}
- .cinema-copy .actions{gap:10px}
- .cinema-copy .button{padding:14px 16px;font-size:9px;gap:14px;min-height:50px}
+ .cinema-copy .actions{gap:12px}
+ .cinema-copy .button{padding:15px 16px 15px 17px;font-size:10px;letter-spacing:.08em;gap:14px;min-height:52px}
  .cinema-foot{left:24px;right:24px;bottom:22px;align-items:flex-start;flex-direction:column;gap:2px;font-size:7px;letter-spacing:.12em}
  .cinema-foot a{font-size:8px}
  .cinema-shade{background:linear-gradient(0deg,var(--background),transparent 26%),linear-gradient(90deg,color-mix(in srgb,var(--background) 64%,transparent),color-mix(in srgb,var(--background) 19%,transparent)),linear-gradient(180deg,color-mix(in srgb,var(--background) 44%,transparent),transparent 30%,color-mix(in srgb,var(--background) 24%,transparent) 75%)}
@@ -94,7 +94,7 @@
  .lightbox-controls{gap:12px;padding-top:18px}
  .lightbox-controls p{font-size:10px}
 }
-@media(max-width:380px){.masonry{grid-template-columns:1fr;grid-auto-rows:300px}.gallery-tile:nth-child(n){grid-row:auto}.cinema-copy .button{padding-inline:13px;gap:10px}}
+@media(max-width:380px){.masonry{grid-template-columns:1fr;grid-auto-rows:300px}.gallery-tile:nth-child(n){grid-row:auto}.cinema-copy .button{padding-inline:13px;gap:10px;letter-spacing:.06em}}
 @media(prefers-reduced-motion:reduce){.gallery-depth[data-gallery-depth]{inset:0}.hero-video{display:none}.gallery-tile img{transform:none}}
 
 
@@ -150,16 +150,28 @@ html.lenis.lenis-stopped{overflow:clip}
 /* The actual glyphs keep their solid ivory fill. This empty, aria-hidden decorative span paints only
    generated glyph reflections; it shares the line box and never participates in layout or hit testing. */
 .hero-line-text{position:relative}
-.hero-reflection{display:none;position:absolute;inset:0;pointer-events:none;user-select:none;text-shadow:none;opacity:.48}
-.hero-line:nth-child(2) .hero-reflection{opacity:.86}
+.hero-reflection{display:none;position:absolute;inset:0;pointer-events:none;user-select:none;text-shadow:none;opacity:.7}
+.hero-line:nth-child(2) .hero-reflection{opacity:1}
 @supports ((background-clip:text) or (-webkit-background-clip:text)){
  .hero-reflection{display:block}
  .hero-reflection::before{content:attr(data-text);display:block;white-space:pre;color:transparent;-webkit-text-fill-color:transparent;background-clip:text;-webkit-background-clip:text;
+ /* Top to bottom of the stack (REFLECTIVE-HEADLINE-REPORT.md). Each angled beam's glint while it passes its catch angle:
+    a soft champagne reflection about a stem wide, brightest at its centre (never pure white), fading through a warm
+    amber bloom into a faint smoked shoulder (the dark room reflected around the light),
+    sliding with the beam (--gx); its broad warm halo; each beam's faint reflection drifting with it across the surface;
+    then the polished surface itself: one continuous tonal curve, a bright ivory crown, a faint champagne-silver body,
+    deepening gently to smoked champagne at the foot. No bands or edges. The ivory text beneath stays solid. */
  background-image:
- linear-gradient(var(--ra0,90deg),transparent calc(var(--rx0,-100%) - var(--rw0,4%)),rgb(255 219 168 / calc(var(--ri0,0) * .32)) var(--rx0,-100%),transparent calc(var(--rx0,-100%) + var(--rw0,4%))),
- linear-gradient(var(--ra1,90deg),transparent calc(var(--rx1,-100%) - var(--rw1,4%)),rgb(255 253 244 / calc(var(--ri1,0) * .46)) var(--rx1,-100%),transparent calc(var(--rx1,-100%) + var(--rw1,4%))),
- linear-gradient(var(--ra2,90deg),transparent calc(var(--rx2,-100%) - var(--rw2,4%)),rgb(248 205 154 / calc(var(--ri2,0) * .25)) var(--rx2,-100%),transparent calc(var(--rx2,-100%) + var(--rw2,4%))),
- linear-gradient(174deg,transparent 22%,rgb(255 247 230 / .1) 39%,rgb(76 51 30 / .08) 48%,transparent 57%)}
+ linear-gradient(var(--ra0,90deg),transparent calc(var(--gx0,-100%) - var(--rw0,4%) * 4.4),rgb(66 48 34 / calc(var(--rg0,0) * .16)) calc(var(--gx0,-100%) - var(--rw0,4%) * 3.1),rgb(230 170 108 / calc(var(--rg0,0) * .42)) calc(var(--gx0,-100%) - var(--rw0,4%) * 2.2),rgb(250 234 206 / calc(var(--rg0,0) * .85)) calc(var(--gx0,-100%) - var(--rw0,4%) * 1.3),rgb(255 250 240 / calc(var(--rg0,0) * 1.12)) calc(var(--gx0,-100%) - var(--rw0,4%) * 0.7),rgb(255 250 240 / calc(var(--rg0,0) * 1.15)) var(--gx0,-100%),rgb(255 250 240 / calc(var(--rg0,0) * 1.12)) calc(var(--gx0,-100%) + var(--rw0,4%) * 0.7),rgb(250 234 206 / calc(var(--rg0,0) * .85)) calc(var(--gx0,-100%) + var(--rw0,4%) * 1.3),rgb(230 170 108 / calc(var(--rg0,0) * .42)) calc(var(--gx0,-100%) + var(--rw0,4%) * 2.2),rgb(66 48 34 / calc(var(--rg0,0) * .16)) calc(var(--gx0,-100%) + var(--rw0,4%) * 3.1),transparent calc(var(--gx0,-100%) + var(--rw0,4%) * 4.4)),
+ linear-gradient(var(--ra1,90deg),transparent calc(var(--gx1,-100%) - var(--rw1,4%) * 4.4),rgb(66 48 34 / calc(var(--rg1,0) * .16)) calc(var(--gx1,-100%) - var(--rw1,4%) * 3.1),rgb(230 170 108 / calc(var(--rg1,0) * .42)) calc(var(--gx1,-100%) - var(--rw1,4%) * 2.2),rgb(250 234 206 / calc(var(--rg1,0) * .85)) calc(var(--gx1,-100%) - var(--rw1,4%) * 1.3),rgb(255 250 240 / calc(var(--rg1,0) * 1.12)) calc(var(--gx1,-100%) - var(--rw1,4%) * 0.7),rgb(255 250 240 / calc(var(--rg1,0) * 1.15)) var(--gx1,-100%),rgb(255 250 240 / calc(var(--rg1,0) * 1.12)) calc(var(--gx1,-100%) + var(--rw1,4%) * 0.7),rgb(250 234 206 / calc(var(--rg1,0) * .85)) calc(var(--gx1,-100%) + var(--rw1,4%) * 1.3),rgb(230 170 108 / calc(var(--rg1,0) * .42)) calc(var(--gx1,-100%) + var(--rw1,4%) * 2.2),rgb(66 48 34 / calc(var(--rg1,0) * .16)) calc(var(--gx1,-100%) + var(--rw1,4%) * 3.1),transparent calc(var(--gx1,-100%) + var(--rw1,4%) * 4.4)),
+ linear-gradient(var(--ra2,90deg),transparent calc(var(--gx2,-100%) - var(--rw2,4%) * 4.4),rgb(66 48 34 / calc(var(--rg2,0) * .16)) calc(var(--gx2,-100%) - var(--rw2,4%) * 3.1),rgb(230 170 108 / calc(var(--rg2,0) * .42)) calc(var(--gx2,-100%) - var(--rw2,4%) * 2.2),rgb(250 234 206 / calc(var(--rg2,0) * .85)) calc(var(--gx2,-100%) - var(--rw2,4%) * 1.3),rgb(255 250 240 / calc(var(--rg2,0) * 1.12)) calc(var(--gx2,-100%) - var(--rw2,4%) * 0.7),rgb(255 250 240 / calc(var(--rg2,0) * 1.15)) var(--gx2,-100%),rgb(255 250 240 / calc(var(--rg2,0) * 1.12)) calc(var(--gx2,-100%) + var(--rw2,4%) * 0.7),rgb(250 234 206 / calc(var(--rg2,0) * .85)) calc(var(--gx2,-100%) + var(--rw2,4%) * 1.3),rgb(230 170 108 / calc(var(--rg2,0) * .42)) calc(var(--gx2,-100%) + var(--rw2,4%) * 2.2),rgb(66 48 34 / calc(var(--rg2,0) * .16)) calc(var(--gx2,-100%) + var(--rw2,4%) * 3.1),transparent calc(var(--gx2,-100%) + var(--rw2,4%) * 4.4)),
+ linear-gradient(var(--ra0,90deg),transparent calc(var(--gx0,-100%) - var(--rw0,4%) * 6.5),rgb(244 214 170 / calc(var(--rg0,0) * .42)) var(--gx0,-100%),transparent calc(var(--gx0,-100%) + var(--rw0,4%) * 6.5)),
+ linear-gradient(var(--ra1,90deg),transparent calc(var(--gx1,-100%) - var(--rw1,4%) * 6.5),rgb(244 214 170 / calc(var(--rg1,0) * .42)) var(--gx1,-100%),transparent calc(var(--gx1,-100%) + var(--rw1,4%) * 6.5)),
+ linear-gradient(var(--ra2,90deg),transparent calc(var(--gx2,-100%) - var(--rw2,4%) * 6.5),rgb(244 214 170 / calc(var(--rg2,0) * .42)) var(--gx2,-100%),transparent calc(var(--gx2,-100%) + var(--rw2,4%) * 6.5)),
+ linear-gradient(var(--ra0,90deg),transparent calc(var(--rx0,-100%) - var(--rw0,4%) * 6),rgb(255 244 226 / calc(var(--ri0,0) * .36)) var(--rx0,-100%),transparent calc(var(--rx0,-100%) + var(--rw0,4%) * 6)),
+ linear-gradient(var(--ra1,90deg),transparent calc(var(--rx1,-100%) - var(--rw1,4%) * 6),rgb(255 244 226 / calc(var(--ri1,0) * .36)) var(--rx1,-100%),transparent calc(var(--rx1,-100%) + var(--rw1,4%) * 6)),
+ linear-gradient(var(--ra2,90deg),transparent calc(var(--rx2,-100%) - var(--rw2,4%) * 6),rgb(255 244 226 / calc(var(--ri2,0) * .36)) var(--rx2,-100%),transparent calc(var(--rx2,-100%) + var(--rw2,4%) * 6)),
+ linear-gradient(180deg,rgb(255 253 248 / .34) 0%,rgb(255 252 246 / .14) 20%,rgb(206 210 214 / .1) 36%,rgb(176 160 146 / .1) 52%,rgb(132 102 76 / .2) 70%,rgb(110 82 58 / .3) 86%,rgb(128 94 64 / .3) 100%)}
 }
 @media(prefers-reduced-motion:reduce),(forced-colors:active){.hero-reflection{display:none}}
 .cinema-copy .hero-description{margin:26px auto 30px;max-width:380px}
@@ -171,6 +183,18 @@ html.hero-intro .hero-skip,.cinema-hero.is-intro .hero-skip{display:inline-flex}
 @media(max-width:1100px),(max-height:820px){}
 /* The light can pass behind the actions: the outline button keeps a dark brand fill for contrast. */
 .cinema-copy .button.outline,.cinema-copy .button.outline:hover{background:color-mix(in srgb,var(--background) 74%,transparent)}
+/* Hero actions: the primary carries a soft ember light spill (a hairline glow and a warm pool beneath it) that rises
+   on hover and keyboard focus, as if the stage light caught it; the secondary is smoked glass with a champagne hairline
+   and a faint glass edge. Colours, labels and hierarchy are unchanged; pressing settles the lift. */
+.cinema-copy .button{transition:translate var(--duration),box-shadow .45s cubic-bezier(.2,.7,.2,1),border-color var(--duration)}
+.cinema-copy .button:not(.outline){background-image:linear-gradient(180deg,rgb(255 236 220 / .1),rgb(255 236 220 / 0) 52%,rgb(60 10 4 / .1));box-shadow:inset 0 1px 0 rgb(255 226 204 / .2),0 0 0 1px color-mix(in srgb,var(--glow) 28%,transparent),0 14px 34px -16px color-mix(in srgb,var(--glow) 80%,transparent)}
+.cinema-copy .button.outline{border-color:color-mix(in srgb,var(--accent-readable) 80%,transparent);box-shadow:inset 0 1px 0 rgb(255 240 222 / .1),0 12px 30px -18px color-mix(in srgb,var(--accent) 50%,transparent)}
+@media(hover:hover) and (pointer:fine){.cinema-copy .button:not(.outline):hover{box-shadow:inset 0 1px 0 rgb(255 226 204 / .26),0 0 0 1px color-mix(in srgb,var(--glow) 45%,transparent),0 18px 44px -14px color-mix(in srgb,var(--glow) 95%,transparent),0 0 34px -8px color-mix(in srgb,var(--glow) 42%,transparent)}.cinema-copy .button.outline:hover{border-color:var(--accent-readable);box-shadow:inset 0 1px 0 rgb(255 240 222 / .16),0 0 0 1px color-mix(in srgb,var(--accent-readable) 28%,transparent),0 16px 38px -16px color-mix(in srgb,var(--accent) 70%,transparent)}}
+.cinema-copy .button:not(.outline):focus-visible{box-shadow:inset 0 1px 0 rgb(255 226 204 / .26),0 0 0 1px color-mix(in srgb,var(--glow) 45%,transparent),0 18px 44px -14px color-mix(in srgb,var(--glow) 95%,transparent),0 0 34px -8px color-mix(in srgb,var(--glow) 42%,transparent)}
+.cinema-copy .button.outline:focus-visible{border-color:var(--accent-readable);box-shadow:inset 0 1px 0 rgb(255 240 222 / .16),0 0 0 1px color-mix(in srgb,var(--accent-readable) 28%,transparent),0 16px 38px -16px color-mix(in srgb,var(--accent) 70%,transparent)}
+.cinema-copy .button:active{translate:0 0;transition-duration:90ms}
+.cinema-copy .button:not(.outline):active{box-shadow:inset 0 1px 0 rgb(255 226 204 / .14),0 0 0 1px color-mix(in srgb,var(--glow) 35%,transparent),0 8px 22px -14px color-mix(in srgb,var(--glow) 80%,transparent)}
+@media(prefers-reduced-motion:reduce){.cinema-copy .button:hover{translate:none}}
 @media(max-width:700px){
  .cinema-composition{padding:96px 22px 26vh}
  
@@ -724,10 +748,10 @@ h3{font-family:var(--type-display);font-weight:var(--fw-heading);line-height:var
 /* The blur sits on the layer around the clipped cone, so the cone's edges stay soft. */
 .hero-beam i{position:absolute;inset:0;display:block;transform-origin:50% 0;filter:blur(13px);opacity:var(--bo,.7);will-change:transform}
 .hero-beam i::before{content:'';position:absolute;inset:0;clip-path:polygon(44% 0,56% 0,100% 100%,0 100%);background:linear-gradient(180deg,var(--beam-core) 0%,var(--beam) 24%,color-mix(in srgb,var(--beam) 30%,transparent) 56%,transparent 84%)}
-.hero-beam[data-tone=spot]{--beam-core:color-mix(in srgb,var(--spot-core) 81%,transparent);--beam:color-mix(in srgb,var(--spot) 45%,transparent);--bo:.72}
-.hero-beam[data-tone=amber]{--beam-core:color-mix(in srgb,var(--spot) 72%,transparent);--beam:color-mix(in srgb,var(--amber) 45%,transparent);--bo:.78}
-.hero-beam[data-tone=ember]{--beam-core:color-mix(in srgb,var(--amber) 67%,transparent);--beam:color-mix(in srgb,var(--glow) 40%,transparent);--bo:.7}
-.hero-beam[data-tone=steel]{--beam-core:color-mix(in srgb,color-mix(in srgb,var(--steel) 55%,var(--text)) 56%,transparent);--beam:color-mix(in srgb,var(--steel) 51%,transparent);--bo:.6}
+.hero-beam[data-tone=spot]{--beam-core:color-mix(in srgb,var(--spot-core) 85%,transparent);--beam:color-mix(in srgb,var(--spot) 47%,transparent);--bo:.76}
+.hero-beam[data-tone=amber]{--beam-core:color-mix(in srgb,var(--spot) 76%,transparent);--beam:color-mix(in srgb,var(--amber) 47%,transparent);--bo:.83}
+.hero-beam[data-tone=ember]{--beam-core:color-mix(in srgb,var(--amber) 71%,transparent);--beam:color-mix(in srgb,var(--glow) 42%,transparent);--bo:.74}
+.hero-beam[data-tone=steel]{--beam-core:color-mix(in srgb,color-mix(in srgb,var(--steel) 55%,var(--text)) 59%,transparent);--beam:color-mix(in srgb,var(--steel) 53%,transparent);--bo:.64}
 .hero-wash{position:absolute;inset:0;pointer-events:none;opacity:0;mix-blend-mode:screen;background:radial-gradient(ellipse 70% 46% at 50% 0%,color-mix(in srgb,var(--glow) 30%,transparent),transparent 74%),radial-gradient(ellipse 40% 34% at 18% 8%,color-mix(in srgb,var(--crimson) 50%,transparent),transparent 72%),radial-gradient(ellipse 40% 34% at 82% 8%,color-mix(in srgb,var(--crimson) 50%,transparent),transparent 72%)}
 .hero-sweep{position:absolute;top:-30%;bottom:30%;left:0;width:30%;pointer-events:none;opacity:0;rotate:14deg;transform:translateX(-140%);filter:blur(28px);mix-blend-mode:screen;background:linear-gradient(90deg,transparent,color-mix(in srgb,var(--spot) 26%,transparent) 40%,color-mix(in srgb,var(--spot-core) 44%,transparent) 50%,color-mix(in srgb,var(--spot) 26%,transparent) 60%,transparent)}
 /* About 12% taller: the renderer recalculates proportional figures; no CSS stretching. */

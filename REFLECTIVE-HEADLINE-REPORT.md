@@ -54,3 +54,64 @@ Artifacts:
 This is a lightweight approximation of reflected stage light, not a physically rendered material. There are no shaders, WebGL, new packages or independent shine loops. Source comparison confirms that the crowd renderer, phone flashes, spotlight component/design, header, CTAs, copy and unrelated sections were preserved by this headline change. The separately requested gallery work was retained.
 
 Chromium desktop/tablet/emulated-mobile coverage does not establish physical-device, Safari/Firefox, screen-reader, battery or long-duration thermal performance. Changes remain local and uncommitted; no deployment or environment configuration was modified.
+
+## Revision, 17 November 2026: from present-but-invisible to visibly catching the light
+
+**Problem reported:** the effect was not visibly working on the site. The implementation above was mechanically sound (projection, sync, cleanup and tests all passed), but in Chromium the headline read as ordinary flat ivory type.
+
+**Diagnosis** (measured in Chromium, `scripts/visual/headline-review.mjs`):
+
+- **Too little change to see:** the reflection changed the letters' luminance by about 2/255 on average.
+- **White on white:** the highlights were warm white (`rgb(255 253 244)`) drawn on near-white ivory (`#F6F3EE`), at 32–46% strength, then multiplied by the overlay's 0.48 / 0.86 opacity. There was almost nothing for light to brighten.
+- **Hairline highlights:** each one was 2–3% of the line's width.
+- **Never "caught":** each line's intensity sat at about 0.7 at all times. The three beams always hang over the headline, so the letters wore a constant faint tint and never caught the light.
+- **What worked:** the mapping was correct. Projected positions tracked the beams; logged against the beam angles over a full cycle.
+
+**Fix** (no new loops: the same `update()` called by the existing intro, ambient and scroll timelines):
+
+1. **Smoked-mirror material** (static, in the overlay): a faint ceiling sheen at the top, a fine horizon at mid-height (a bright edge over a warm dark edge), and a lightly smoked lower half. This is what makes the lettering read as polished mirror, and what gives a highlight room to show. The ivory base underneath is untouched.
+2. **A specular glint** (`specular()` in `headlineReflection.ts`). A polished surface returns a light to the viewer only when the beam passes a particular angle, so each beam has a catch angle on its own sweep path. As the beam swings through it, a glint rises and fades: a Gaussian lobe of 1.5° (about 1° on phones). The catch angle is 45% into the sweep, set by `HomeMotion` (which owns the sweeps), so it always lies on the path the beam actually travels.
+3. **Who glints:** only the two angled beams over the headline (rigs 2 and 4). The centre key light gives just a faint diffuse wash. With the existing sweeps this means a glint roughly a third of the time, about a second each, never in unison, with clean mirror lettering between. Three-beam and catch-angle variants were simulated against the real sweep functions before choosing; all of them glinted 43–85% of the time.
+4. **Drawn as a feathered streak**, aligned with the beam: a bright warm core with amber fringes, about one letter wide, over each beam's soft wash.
+5. **"AFTER DARK." stronger:** the overlay now runs at 1 on "AFTER DARK." and 0.62 on "DEL MAR" (previously 0.86 and 0.48).
+6. **Phones** keep the existing ×0.6 strength.
+7. **Unchanged:** reduced motion, forced colours and the no-clip fallback still show the plain ivory headline.
+
+**Scroll:** the rigs' scroll swing passes through the catch angles, so the letters catch the light at consistent scroll positions and return to the same resting state at the top.
+
+**Measured result** (80 samples per size, including the strongest glints):
+- **Desktop:** the letters' median luminance is never below 211/255 (the solid base is about 242, so about 87% clean), the 5th percentile at least 188, and the brightest pixel 238 (no flare).
+- **Phones:** median at least 210 (the 5th percentile of 145 is antialiased edges on the smaller type).
+- **Change the reflection makes:** about 21/255 on average now, against 2 before.
+
+**Tests added:**
+- `tests/headline-reflection.test.ts`: the specular lobe; glint at the catch angle, none away from it, none without a catch point, none when the cone misses.
+- `tests/browser/headline-reflection.spec.ts`, at 1440 and 390 px over 16 s:
+  - the centre beam never glints;
+  - glints are visible but occasional (clean more than 25% of the time, lit less than 60%);
+  - every strong glint of a beam happens at the same orientation of that beam, which is the sync check;
+  - the letters stay readable (median at least 195, no flare above 250).
+
+**Verification, 17 November 2026:**
+- **Checks:** ESLint and TypeScript pass. The production build passes. Headline unit tests 3/3.
+- **Dev server:** headline, hero-lighting, hero-intro, hero-scene, hero-crowd, hero-cleanup, visual-identity and cinematic-motion: 56/57 passed. The failure is `cinematic-motion` "scenes are scrubbed by scroll position" (the Specials photo). It is a pre-existing intermittent failure: it also fails 2 of 3 runs on the committed code with this change stashed, and is outside this change.
+- **Production build** (:3100): headline and hero suites 44/45. The one failure was the two-cycle recording test exceeding its 60 s limit during the long run; it passed twice when re-run alone (about 35 s each).
+
+**Recordings** (production build), in `artifacts/headline-reflection/`:
+- `spotlight-glints-1440.webm`: intro, about 25 s at rest across several beam sweeps, scroll through the hold and back.
+- `spotlight-glints-1440-closeup.webm`: the same frames, enlarged 1.5× on the headline; frame sheet `spotlight-glints-1440-closeup-frames.jpg`.
+- `spotlight-glints-390.webm`: phone.
+
+**Visual review:**
+- At rest the lettering reads as polished smoked mirror: ivory, crisp, with a fine horizon.
+- When a beam swings through its catch angle, a warm streak catches a letter or two and fades.
+- "AFTER DARK." catches more than "DEL MAR".
+- Nothing flashes, and the CTAs, crowd and beams remain the main motion.
+- On phones the glints are gentler and the lettering stays clean.
+
+Files changed in this revision:
+- `apps/web/src/lib/motion/headlineReflection.ts`
+- `apps/web/src/components/motion/HomeMotion.tsx` (catch points only)
+- `apps/web/src/app/globals.css` (reflection overlay only)
+- the two headline test files
+- `scripts/visual/headline-review.mjs`, `headline-record.mjs`, `closeup.mjs`, and `frames.mjs` (new crop option)

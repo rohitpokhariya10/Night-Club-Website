@@ -115,15 +115,20 @@ function heroScene({root, mobile}: Scene) {
   // Each inner beam owns its idle rotation; ScrollTrigger rotates only the outer rig.
   // A quarter-cycle ease out of the static pose joins a full sine sweep with no velocity jump at the turn.
   // Distinct periods/directions keep the room from moving in unison. No animated blur or per-frame layout reads.
-  const reflection = createHeadlineReflection(hero, mobile);
-  const ambient = gsap.timeline({paused: true, onUpdate: reflection.update});
   const sweeps = [
     {angle: 6.5, period: 9.4}, {angle: -8, period: 11.8}, {angle: 5.5, period: 8.6},
     {angle: -6.8, period: 10.7}, {angle: 7.2, period: 12},
   ];
+  // The headline catches the two angled beams over it (rigs 2 and 4) as each passes a point 45% into its own sweep:
+  // a glint of a second or so that slides across a couple of letters (0.2 line heights per degree of turn), a third
+  // or so of the time, never in unison. The centre key light only washes it.
+  const sway = mobile ? 0.65 : 1;
+  const catchPoint = (i: number) => ({offset: sweeps[i].angle * 0.45 * sway, spread: 1.5 * sway, travel: 0.2});
+  const reflection = createHeadlineReflection(hero, mobile, [catchPoint(1), null, catchPoint(3)]);
+  const ambient = gsap.timeline({paused: true, onUpdate: reflection.update});
   beamLights.forEach((beam, i) => {
     const {angle, period} = sweeps[i % sweeps.length];
-    const amplitude = angle * (mobile ? 0.65 : 1);
+    const amplitude = angle * sway;
     ambient.to(beam, {rotation: amplitude, duration: period / 4, ease: 'sine.out'}, 0)
       .to(beam, {rotation: -amplitude, duration: period / 2, ease: 'sine.inOut', repeat: -1, yoyo: true}, period / 4);
   });
