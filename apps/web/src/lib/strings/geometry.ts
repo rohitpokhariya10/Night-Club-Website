@@ -64,6 +64,20 @@ export function smoothPath(x: ArrayLike<number>, y: ArrayLike<number>) {
   return `${d}L${f(x[n - 1])} ${f(y[n - 1])}`;
 }
 
+/** A point on the same quadratic spline emitted by smoothPath, including its two straight end segments. */
+export function smoothPoint(x: ArrayLike<number>, y: ArrayLike<number>, s: number): [number, number] {
+  const last = x.length - 1, p = Math.max(0, Math.min(1, s)) * last;
+  // smoothPath rounds its coordinates to tenths; match those rendered coordinates here as well.
+  const r = (v: number) => Math.round(v * 10) / 10;
+  const at = (values: ArrayLike<number>) => {
+    if (p < 0.5) return r(values[0]) + (r((values[0] + values[1]) / 2) - r(values[0])) * p * 2;
+    if (p > last - 0.5) return r((values[last - 1] + values[last]) / 2) + (r(values[last]) - r((values[last - 1] + values[last]) / 2)) * (p - last + 0.5) * 2;
+    const i = Math.min(last - 1, Math.floor(p + 0.5)), t = p - i + 0.5, u = 1 - t;
+    return u * u * r((values[i - 1] + values[i]) / 2) + 2 * u * t * r(values[i]) + t * t * r((values[i] + values[i + 1]) / 2);
+  };
+  return [at(x), at(y)];
+}
+
 /** Nearest sample index to a point (squared distance), with the distance itself. */
 export function nearestSample(xs: ArrayLike<number>, ys: ArrayLike<number>, px: number, py: number) {
   let best = 0, bestD = Infinity;

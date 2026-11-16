@@ -20,7 +20,9 @@ import type {FoodCategory} from '@/lib/featured';
  * change it; vertical scrolling stays native (touch-action: pan-y, no wheel handling).
  * The resting layout is pure CSS (each card's --slot), so it is complete without JavaScript.
  */
-const TONES: Record<string, string> = {food: '#6e32a8', drinks: '#4b5bd6', 'after-dark': '#9259c5'};
+// The light behind each category, from the Midnight Ember palette (tokens.css: --amber, --steel, and a deep ember). Literal
+// colours, because GSAP interpolates them between categories (a var() could not be tweened).
+const TONES: Record<string, string> = {food: '#D9714A', drinks: '#52758A', 'after-dark': '#9A3324'};
 const SIDE_SCALE = 0.8;
 
 export default function FoodCarousel({categories, eyebrow, title}: {categories: FoodCategory[]; eyebrow: string; title: string}) {

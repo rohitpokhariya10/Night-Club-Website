@@ -167,10 +167,10 @@ export default function SignatureShowcase({items}: {items: FeaturedItem[]}) {
               stronger as they sweep into the breathing space below it, gone by the orbit's lower edge (the section's). */}
           <defs>
             <linearGradient id="sig-arc-fade" gradientUnits="userSpaceOnUse" x1="0" y1="0" x2="0" y2="100">
-              <stop offset="0" stopColor="rgb(210 167 255)" stopOpacity="0.09" />
-              <stop offset="0.72" stopColor="rgb(210 167 255)" stopOpacity="0.09" />
-              <stop offset="0.86" stopColor="rgb(210 167 255)" stopOpacity="0.16" />
-              <stop offset="1" stopColor="rgb(210 167 255)" stopOpacity="0" />
+              <stop offset="0" style={{stopColor: 'var(--accent-readable)'}} stopOpacity="0.09" />
+              <stop offset="0.72" style={{stopColor: 'var(--accent-readable)'}} stopOpacity="0.09" />
+              <stop offset="0.86" style={{stopColor: 'var(--accent-readable)'}} stopOpacity="0.16" />
+              <stop offset="1" style={{stopColor: 'var(--accent-readable)'}} stopOpacity="0" />
             </linearGradient>
           </defs>
           <circle cx="50" cy="50" r="59" />

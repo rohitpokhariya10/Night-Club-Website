@@ -10,7 +10,7 @@
     "build": "npm run build -w @jimmy/api && npm run build -w @jimmy/web",
     "typecheck": "npm run typecheck --workspaces --if-present",
     "lint": "eslint .",
-    "test": "tsx --test tests/api.test.ts",
+    "test": "tsx --test tests/api.test.ts tests/strings.test.ts",
     "test:e2e": "playwright test",
     "db:generate": "npm run db:generate -w @jimmy/api",
     "db:migrate": "npm run db:migrate -w @jimmy/api",

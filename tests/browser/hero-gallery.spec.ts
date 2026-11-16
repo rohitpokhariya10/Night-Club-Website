@@ -24,14 +24,17 @@ for (const width of [390, 768, 1024, 1440]) test(`hero and gallery at ${width}px
   await page.evaluate(() => document.fonts.ready);
   await expect(page.locator('.hero-frame')).toHaveCount(0);
   await expect(page.locator('h1')).toHaveText('DEL MAR AFTER DARK.');
-  await expect(page.locator('.cinema-copy .hero-eyebrow')).toHaveText('DEL MAR, CALIFORNIA — GOOD TIMES LIVE HERE');
+  await expect(page.locator('.cinema-copy .hero-eyebrow')).toHaveCount(0);
+  await expect(page.locator('.cinema-hero')).not.toContainText('COASTAL SOUL. LATE-NIGHT ENERGY.');
   await expect(page.locator('.cinema-copy .hero-description')).toHaveText('Come for the drinks. Stay for the music. Leave with a story.');
   await expect(page.locator('.cinema-copy').getByRole('link', {name: 'EXPLORE NIGHTLIFE'})).toHaveAttribute('href', '/nightlife');
   await expect(page.locator('.cinema-copy').getByRole('link', {name: 'BOOK A TABLE'})).toHaveAttribute('href', '/reservations');
   // The animated light hero replaces the old background video.
   await expect(page.locator('video')).toHaveCount(0);
-  await expect(page.locator('.lf-slat:visible')).toHaveCount(width <= 700 ? 6 : width <= 1024 ? 8 : 11);
-  await expect(page.locator('.hero-orb img')).toBeVisible();
+  await expect(page.locator('.hero-beam:visible')).toHaveCount(width <= 700 ? 4 : 5);
+  await expect(page.locator('.lf, .lf-slat, .lf-band')).toHaveCount(0);
+  await expect(page.locator('.hero-orb')).toHaveCount(0);
+  await expect(page.locator('.header .logo')).toBeVisible();
   await expect(page.locator('.cinema-hero')).toHaveAttribute('data-ambient', 'running');
   await expect(page.locator('.cinema-copy h1')).toHaveCSS('opacity', '1');
   expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(true);
@@ -117,8 +120,9 @@ test('reduced motion reveals everything and viewer stays functional, including p
   await page.goto('/');
   await page.waitForTimeout(600);
   await expect(page.locator('video')).toHaveCount(0);
-  await expect(page.locator('.lf')).toBeVisible();
-  await expect(page.locator('.hero-orb img')).toBeVisible();
+  await expect(page.locator('.hero-atmosphere')).toBeVisible();
+  await expect(page.locator('.hero-orb')).toHaveCount(0);
+  await expect(page.locator('.header .logo')).toBeVisible();
   await expect(page.locator('.hero-skip')).toBeHidden();
   await expect(page.locator('.hero-line-text').first()).toHaveCSS('opacity', '1');
   await page.goto('/gallery');
@@ -149,7 +153,8 @@ test('Save-Data loads no video and keeps usable CTAs', async ({page}) => {
   await page.waitForTimeout(600);
   await expect(page.locator('video')).toHaveCount(0);
   expect(videos).toEqual([]);
-  await expect(page.locator('.hero-orb img')).toBeVisible();
+  await expect(page.locator('.hero-orb')).toHaveCount(0);
+  await expect(page.locator('.header .logo')).toBeVisible();
   await page.locator('.cinema-copy').getByRole('link', {name: 'EXPLORE NIGHTLIFE'}).click();
   await expect(page).toHaveURL('/nightlife');
   await page.goBack();
@@ -163,8 +168,9 @@ test('server-rendered hero and gallery remain visible without JavaScript', async
   await page.goto('/');
   await expect(page.locator('h1')).toHaveText('DEL MAR AFTER DARK.');
   await expect(page.locator('h1')).toHaveCSS('opacity', '1');
-  await expect(page.locator('.lf-slat:visible')).toHaveCount(6);
-  await expect(page.locator('.hero-orb img')).toBeVisible();
+  await expect(page.locator('.hero-beam:visible')).toHaveCount(4);
+  await expect(page.locator('.hero-orb')).toHaveCount(0);
+  await expect(page.locator('.header .logo')).toBeVisible();
   await expect(page.locator('.hero-skip')).toBeHidden();
   await expect(page.locator('.cinema-copy .actions a')).toHaveCount(2);
   await page.goto('/gallery');

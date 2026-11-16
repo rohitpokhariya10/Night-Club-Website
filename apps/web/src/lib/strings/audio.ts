@@ -33,10 +33,11 @@ function noise(seed: number) {
 export function renderPluck(sampleRate: number, frequency: number, seconds = NOTE_SECONDS, seed = 7) {
   const length = Math.floor(sampleRate * seconds);
   const out = new Float32Array(length);
-  // The loop (delay line + two-point average) delays by N + 0.5 samples; the all-pass supplies the fraction.
+  // The loop delays by N − 0.5 samples (each new sample averages the outgoing one with its newer neighbour);
+  // the all-pass supplies the remaining fraction, so the period is exact.
   const period = sampleRate / frequency;
-  const n = Math.max(2, Math.floor(period - 0.5));
-  const fraction = Math.min(0.999, Math.max(0.001, period - 0.5 - n));
+  const n = Math.max(2, Math.floor(period - 0.5) + 1);
+  const fraction = Math.min(0.999, Math.max(0.001, period + 0.5 - n));
   const allpass = (1 - fraction) / (1 + fraction);
   // Decay: lower strings ring longer, like a guitar. rho is the loss per trip around the loop.
   const t60 = 2.6 * Math.pow(110 / frequency, 0.35);

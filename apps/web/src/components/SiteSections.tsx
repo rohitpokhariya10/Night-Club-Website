@@ -1,7 +1,7 @@
 import Link from 'next/link';
 import {Disc3,Mic2,Trophy,GlassWater} from 'lucide-react';
 import {Arrow,Button,Photo,Label} from './ui';
-import {LightField, HeroOrbit} from './HeroLight';
+import {HeroOrbit, HeroScene} from './HeroLight';
 import NightFilm from './NightFilm';
 import HomeGalleryMotion from './HomeGalleryMotion';
 import FoodCarousel from './FoodCarousel';
@@ -10,14 +10,14 @@ import {foodCategories,featuredItems} from '@/lib/featured';
 import LightboxGallery from './LightboxGallery';
 import {homeGalleryPhotos} from '@/lib/gallery';
 import {guestReviews,type PublicEvent,type SpecialContent} from '@jimmy/shared';
-export function HomeHero(){return <section className="cinema-hero" aria-label="Del Mar after dark"><div className="cinema-media" aria-hidden="true"><LightField/></div><div className="cinema-shade"/><div className="cinema-veil" aria-hidden="true"/><HeroOrbit/><div className="cinema-composition"><div className="cinema-copy"><p className="hero-eyebrow">DEL MAR, CALIFORNIA — GOOD TIMES LIVE HERE</p><h1><span className="hero-line"><span className="hero-line-text">DEL MAR</span></span>{' '}<span className="hero-line"><span className="hero-line-text">AFTER DARK.</span></span></h1><p className="hero-description"><span>Come for the drinks. Stay for the music.</span>{' '}<span>Leave with a story.</span></p><div className="actions"><Button href="/nightlife">EXPLORE NIGHTLIFE</Button><Button href="/reservations" outline>BOOK A TABLE</Button></div></div></div><div className="cinema-foot"><span>COASTAL SOUL. LATE-NIGHT ENERGY.</span><a href="#experience">Discover Jimmy O’s <Arrow dir="down" size={16}/></a></div><button type="button" className="hero-skip">Skip intro</button></section>}
+export function HomeHero(){return <section className="cinema-hero" aria-label="Del Mar after dark"><div className="cinema-media" aria-hidden="true"><HeroScene/></div><div className="cinema-shade"/><div className="cinema-veil" aria-hidden="true"/><HeroOrbit/><div className="cinema-composition"><div className="cinema-copy"><h1><span className="hero-line"><span className="hero-line-text">DEL MAR<span className="hero-reflection" aria-hidden="true" data-text="DEL MAR"/></span></span>{' '}<span className="hero-line"><span className="hero-line-text">AFTER DARK.<span className="hero-reflection" aria-hidden="true" data-text="AFTER DARK."/></span></span></h1><p className="hero-description"><span>Come for the drinks. Stay for the music.</span>{' '}<span>Leave with a story.</span></p><div className="actions"><Button href="/nightlife">EXPLORE NIGHTLIFE</Button><Button href="/reservations" outline>BOOK A TABLE</Button></div></div></div><div className="cinema-foot"><a href="#experience">Discover Jimmy O’s <Arrow dir="down" size={16}/></a></div><button type="button" className="hero-skip">Skip intro</button></section>}
 export function CenterTitle({script,title,text,reveal=true}:{script:string;title:string;text?:string;reveal?:boolean}){return <div className="center-title" data-reveal={reveal || undefined}><p className="script">{script}</p><h2>{title}</h2>{text&&<p>{text}</p>}</div>}
 /** One headline word inside its reveal mask (static markup: the heading text stays intact for SEO and screen readers). */
 const Word=({children}:{children:string})=><span className="nw"><span>{children}</span></span>;
 export function HomeAbout(){return <section id="discover" className="night-out" aria-labelledby="night-out-title">
   <div className="night-out-light" aria-hidden="true"><span className="night-out-light-a"/><span className="night-out-light-b"/></div>
   <div className="night-out-head">
-    <p className="night-out-eyebrow"><span className="night-out-index" aria-hidden="true">01</span><span className="night-out-eyebrow-text">A Del Mar original</span></p>
+    <p className="night-out-eyebrow"><span className="night-out-index" aria-hidden="true"/><span className="night-out-eyebrow-text">A Del Mar original</span></p>
     <h2 id="night-out-title" className="night-out-title"><span className="night-out-line"><Word>More</Word> <Word>than</Word></span>{' '}<span className="night-out-line night-out-line-offset"><span><Word>a</Word> <Word>night</Word></span>{' '}<em><Word>out.</Word></em></span></h2>
   </div>
   <div className="night-out-stage">

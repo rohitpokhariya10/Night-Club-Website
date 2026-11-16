@@ -4,6 +4,8 @@ Complete independent multi-page website: Next.js App Router, React/TypeScript, T
 
 **Homepage hero:** the background video has been replaced by an animated light hero (fluted-glass light band, Jimmy O's logo orb, measured intro with Skip and reduced-motion fallbacks) modelled on a Pinterest reference; see [PINTEREST-HERO-REFERENCE.md](PINTEREST-HERO-REFERENCE.md) and [PINTEREST-HERO-IMPLEMENTATION.md](PINTEREST-HERO-IMPLEMENTATION.md). The video files remain in `public/videos/` but are not used.
 
+**"Every night has a rhythm" (#experience):** the first section after the hero: four playable violet strings with seven venue photographs clipped onto them (modal string physics, optional Karplus–Strong plucked notes that stay off until enabled, keyboard pegs, three compositions, reduced-motion still state). The hero's "Discover Jimmy O's" link now leads here. See [EXPERIENCE-STRINGS-REPORT.md](EXPERIENCE-STRINGS-REPORT.md).
+
 **"More than a night out" section:** a film section (nightlife cut of the supplied Jimmy O's footage) with Syne/Manrope editorial typography; see [NIGHT-OUT-SECTION-REPORT.md](NIGHT-OUT-SECTION-REPORT.md).
 
 **Food & Drinks:** a categories carousel and a Signature Selections showcase (plated dishes turning with measured motion, verified menu labels), modelled on eatnaked.co; three dish photographs are credited, openly licensed placeholders until the client's own arrive. See [FOOD-DRINKS-CINEMATIC-EXPERIENCE-REPORT.md](FOOD-DRINKS-CINEMATIC-EXPERIENCE-REPORT.md), [FOOD-REFERENCE-MOTION.md](FOOD-REFERENCE-MOTION.md) and the [asset manifest](apps/web/public/media/featured/ASSET-MANIFEST.md).

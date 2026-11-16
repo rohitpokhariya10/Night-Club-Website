@@ -17,6 +17,7 @@ import {stringsScene} from '@/lib/strings/scene';
 export function useStringInstrument(root: RefObject<HTMLElement | null>, onPluck: (event: PluckEvent) => void) {
   const instrument = useRef<Instrument | null>(null);
   const pluck = useRef(onPluck);
+  const positions = useRef(new Map<LayoutKey, Map<number, number>>());
   useLayoutEffect(() => {pluck.current = onPluck;}, [onPluck]);
 
   useLayoutEffect(() => {
@@ -31,7 +32,8 @@ export function useStringInstrument(root: RefObject<HTMLElement | null>, onPluck
       const svg = stage.querySelector<SVGSVGElement>(`.ns-svg[data-layout="${key}"]`);
       if (!svg) return;
       const layout = instrumentLayouts[key];
-      const live = createInstrument({root: stage, svg, layout, motion: conditions.motion, onPluck: event => pluck.current(event)});
+      if (!positions.current.has(key)) positions.current.set(key, new Map());
+      const live = createInstrument({positions: positions.current.get(key), root: stage, svg, layout, motion: conditions.motion, onPluck: event => pluck.current(event)});
       instrument.current = live;
       const releaseScene = conditions.motion ? stringsScene({section, svg, layout, instrument: live, mobile: key === 'mobile'}) : () => {};
       section.dataset.instrument = key;

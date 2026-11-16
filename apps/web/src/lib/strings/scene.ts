@@ -38,7 +38,8 @@ export function stringsScene({section, svg, layout, instrument, mobile}: {sectio
   qa('.ns-string', svg).forEach((group, i) => {
     entrance.fromTo(qa('.ns-air, .ns-halo, .ns-core', group),
       {strokeDasharray: '1 1', strokeDashoffset: 1},
-      {strokeDashoffset: 0, duration: 1.5, ease: 'power2.inOut', clearProps: 'strokeDasharray,strokeDashoffset'}, 0.5 + i * 0.14);
+      // pathLength="1" units: no rounding to whole pixels, or the line would pop instead of drawing.
+      {strokeDashoffset: 0, duration: 1.5, ease: 'power2.inOut', autoRound: false, clearProps: 'strokeDasharray,strokeDashoffset'}, 0.5 + i * 0.14);
   });
 
   cards.forEach(({el, index}, j) => {
@@ -64,7 +65,7 @@ export function stringsScene({section, svg, layout, instrument, mobile}: {sectio
   const depth = {trigger: section, start: 'top bottom', end: 'bottom top', scrub: true};
   if (!mobile) {
     lights.forEach((light, i) => gsap.fromTo(light, {yPercent: i % 2 ? 14 : -12}, {yPercent: i % 2 ? -12 : 16, ease: 'none', scrollTrigger: {...depth}}));
-    gsap.fromTo(q('.ns-head'), {y: 36}, {y: -44, ease: 'none', scrollTrigger: {...depth}});
+    gsap.fromTo(q('.ns-head'), {y: 12}, {y: -14, ease: 'none', scrollTrigger: {...depth}});
   }
   // The room's light dims as the next section arrives; the strings themselves fade at the edges (CSS mask).
   gsap.fromTo(q('.ns-atmos'), {opacity: 1}, {opacity: 0.35, ease: 'none', immediateRender: false, scrollTrigger: {trigger: section, start: 'bottom 85%', end: 'bottom top', scrub: true}});

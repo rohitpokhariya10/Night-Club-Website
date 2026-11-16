@@ -14,7 +14,7 @@ const ORDINAL = ['first', 'second', 'third', 'fourth'];
 const Word = ({children}: {children: string}) => <span className="nw"><span>{children}</span></span>;
 
 /**
- * "Every night has a rhythm" (#experience): the first panel after the hero. Four violet strings cross a dark room
+ * "Every night has a rhythm" (#experience): the first panel after the hero. Four champagne strings cross a dark room
  * with Jimmy O's photographs clipped onto them; every string can be pulled, plucked, strummed or played from the
  * keyboard, and answers with light, movement and (only if the visitor turns it on) a soft plucked note.
  * Server-rendered and complete without JavaScript: strings at rest, cards in place, every link working.
@@ -58,6 +58,8 @@ export default function ExperienceStringsSection() {
           </p>
         </div>
       </div>
+      <p id="ns-photo-help" className="ns-photo-help">Drag a photo to swing. Drag its ↔ mount to slide. <span>Use ← / → on a focused photo or mount to reposition; Enter on the photo opens it.</span></p>
+      <p className="sr-only ns-status" role="status" aria-live="polite" aria-atomic="true"/>
       <div className="ns-stage">
         <div className="ns-instrument">
           {layoutKeys.map(key => <InteractiveStrings key={key} layoutKey={key} layout={instrumentLayouts[key]}/>)}

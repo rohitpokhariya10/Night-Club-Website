@@ -76,7 +76,7 @@ test('every directional icon is the shared arrow, pointing the way its icon does
 test('hovering a control moves its arrow the way it points, then eases it back (homepage and footer)', async ({page}) => {
   await page.setViewportSize({width: 1440, height: 900});
   await home(page);
-  await checkHover(page, page.locator('.cinema-foot a[href="#discover"]'), 'down', 'Discover Jimmy O’s');
+  await checkHover(page, page.locator('.cinema-foot a[href="#experience"]'), 'down', 'Discover Jimmy O’s');
   await checkHover(page, page.locator('.cinema-copy .button').first(), 'up-right', 'hero primary button');
   await checkHover(page, page.locator('.header-book'), 'up-right', 'Book a Table (header)');
   for (const [selector, dir, name] of [
@@ -150,7 +150,7 @@ test('keyboard focus moves the arrow the same way, and the focus ring stays', as
 test('the destinations of the directional CTAs are unchanged', async ({page}) => {
   await home(page);
   const expected: [string, string][] = [
-    ['.header-book', '/reservations'], ['.cinema-foot a:has(.arw)', '#discover'], ['.night-out-round', '/about'],
+    ['.header-book', '/reservations'], ['.cinema-foot a:has(.arw)', '#experience'], ['.night-out-round', '/about'],
     ['.text-link', '/catering'], ['.home-gallery .button', '/gallery'], ['.ft-top', '#top'],
   ];
   for (const [selector, href] of expected) await expect(page.locator(selector).first(), selector).toHaveAttribute('href', href);

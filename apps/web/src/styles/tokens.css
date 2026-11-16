@@ -1,4 +1,10 @@
-:root{--background:#090910;--surface:#10101c;--elevated:#191526;--text:#f8f4ff;--muted:#b8b4c6;--accent:#bd85fa;--button:#6e32a8;--accent-readable:#d2a7ff;--purple:#9259c5;--border:#30253f;--content:1320px;--space-section:clamp(72px,8vw,125px);--radius:2px;--ease:cubic-bezier(.2,.7,.2,1);--duration:260ms;--layer-header:40;--focus:#d2a7ff}
+/* Midnight Ember (PREMIUM-NIGHTCLUB-VISUAL-IDENTITY-REPORT.md). A dark room lit warmly: champagne carries detail and
+   light, ember marks only what can be pressed, steel blue gives depth and is never used for text.
+   Roles: --background page · --surface/--elevated raised surfaces · --text/--muted copy · --accent champagne detail
+   (rules, rings, strings, highlights) · --accent-readable champagne for small text · --button ember for actions only
+   (ivory text 4.6:1, WCAG AA) · --button-hover its pressed shade · --glow ember light (glows, never text: 3.3:1 with
+   ivory) · --crimson deep warm glow · --steel cool depth · --amber/--spot/--spot-core the hero's stage light. */
+:root{--background:#090B0D;--surface:#17191D;--elevated:#202328;--text:#F6F3EE;--muted:#A9A49C;--accent:#D1AF88;--accent-readable:#E3C7A2;--button:#C2412E;--button-hover:#A9372A;--glow:#E6533F;--crimson:#7E2A1F;--steel:#52758A;--amber:#D9714A;--spot:#EFBE8C;--spot-core:#F8E3C6;--border:#2A2C31;--content:1320px;--space-section:clamp(72px,8vw,125px);--radius:2px;--ease:cubic-bezier(.2,.7,.2,1);--duration:260ms;--layer-header:40;--focus:#F0D3AC}
 /* Typography system: Syne (display) + Manrope (text), both SIL OFL, self-hosted via next/font/local.
    One place for families, a clamp() scale, weights, line-heights and tracking (GALLERY-TYPOGRAPHY-REDESIGN-REPORT.md). */
 /* Family tokens live on body, where next/font defines --font-syne and --font-manrope (a :root definition would resolve before they exist). */

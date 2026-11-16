@@ -33,7 +33,7 @@ test('desktop hero holds (CSS sticky) and recedes under the rising page, then sc
   await jump(page, 1100);
   await expect(page.locator('.cinema-hero')).toHaveAttribute('data-ambient', 'paused');
   await expect.poll(() => page.locator('.cinema-hero').evaluate(el => Math.round(el.getBoundingClientRect().top))).toBeLessThan(0);
-  await expect.poll(() => page.locator('#discover').evaluate(el => Math.round(el.getBoundingClientRect().top))).toBeLessThan(0);
+  await expect.poll(() => page.locator('.scene-cover > :first-child').evaluate(el => Math.round(el.getBoundingClientRect().top))).toBeLessThan(0);
   // Reverse — the scene scrubs back and playback resumes.
   await jump(page, 0);
   await expect.poll(async () => (await matrix(page, '.cinema-media')).scale).toBeCloseTo(1, 2);
@@ -83,8 +83,9 @@ test('in-page anchors scroll smoothly and move focus like a native jump', async 
   await page.getByRole('link', {name: /Discover Jimmy O’s/}).focus();
   await page.keyboard.press('Enter');
   await expect.poll(() => page.evaluate(() => scrollY)).toBeGreaterThan(700);
-  await expect(page.locator('#discover')).toBeFocused();
-  await expect(page).toHaveURL(/#discover$/);
+  // It leads to the first section after the hero, the playable strings (EXPERIENCE-STRINGS-REPORT.md).
+  await expect(page.locator('#experience')).toBeFocused();
+  await expect(page).toHaveURL(/#experience$/);
 });
 
 test('reduced motion: native scrolling, no hold, no split text, everything visible', async ({page}) => {
@@ -124,7 +125,7 @@ test('repeated client navigation does not duplicate the hero or leave the page l
     await expect(page.locator('.cinema-copy')).toBeVisible();
     await expect(page.locator('.hero-hold')).toHaveCount(1);
     await expect(page.locator('.cinema-hero')).toHaveCount(1);
-    await expect(page.locator('.lf')).toHaveCount(1);
+    await expect(page.locator('.hero-atmosphere')).toHaveCount(1);
     await expect(page.locator('.cinema-hero video')).toHaveCount(0);
   }
   await jump(page, 3000);

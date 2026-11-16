@@ -11,39 +11,36 @@ test.beforeEach(async ({page}) => {
 test.afterEach(async ({page}) => expect(errors.get(page)).toEqual([]));
 
 const hero = (page: Page) => page.locator('.cinema-hero');
-/** Orb centre as a fraction of hero height, headline opacity and blur. */
+/** Headline opacity and blur, without the removed logo badge. */
 const snapshot = (page: Page) => page.evaluate(() => {
-  const h = document.querySelector('.cinema-hero')!.getBoundingClientRect();
-  const o = document.querySelector('.hero-orb')!.getBoundingClientRect();
   const h1 = getComputedStyle(document.querySelector('.cinema-copy h1')!);
-  return {orbY: (o.top + o.height / 2 - h.top) / h.height, h1: Number(h1.opacity), blur: h1.filter};
+  return {h1: Number(h1.opacity), blur: h1.filter};
 });
 
-test('intro follows the reference order: light and centred orb, ghost headline, orb falls, UI arrives, ambient flow', async ({page}) => {
+test('intro preserves the light, ghost headline, UI arrival and ambient flow without decorative badges', async ({page}) => {
   await page.setViewportSize({width: 1440, height: 900});
   await page.goto('/');
   await expect(hero(page)).toHaveClass(/is-intro/);
   await expect(page.getByRole('button', {name: 'Skip intro'})).toBeVisible();
-  // Opening frame: light only, orb at the centre, headline a blurred ghost.
+  // Opening frame: light and a blurred ghost headline, with no logo badge.
   const start = await snapshot(page);
-  expect(start.orbY).toBeGreaterThan(0.45);
-  expect(start.orbY).toBeLessThan(0.62);
+  await expect(page.locator('.hero-orb, .hero-eyebrow')).toHaveCount(0);
   expect(start.h1).toBeLessThan(0.6);
   expect(start.blur).toContain('blur');
-  expect(await page.locator('.lf-band').first().evaluate(el => getComputedStyle(el).getPropertyValue('--y'))).not.toBe('');
-  // End: orb at rest in the lower centre, sharp headline, nav visible, ambient flow running.
+  await expect(page.locator('.lf, .lf-slat, .lf-band')).toHaveCount(0);
+  await expect(page.locator('.hero-atmosphere')).toBeAttached();
+  // End: sharp headline, nav visible, ambient flow running.
   await expect(hero(page)).not.toHaveClass(/is-intro/, {timeout: 6000});
   const end = await snapshot(page);
-  expect(end.orbY).toBeCloseTo(0.82, 1);
   expect(end.h1).toBe(1);
   await expect(page.locator('.header')).toHaveCSS('opacity', '1');
   await expect(page.getByRole('button', {name: 'Skip intro'})).toBeHidden();
   await expect(hero(page)).toHaveAttribute('data-ambient', 'running');
   // The light keeps flowing after the intro.
-  const band = page.locator('.lf-band').nth(3);
-  const y1 = await band.evaluate(el => el.style.getPropertyValue('--y'));
+  const beam = page.locator('.hero-beam > i').nth(3);
+  const initial = await beam.evaluate(el => getComputedStyle(el).transform);
   await page.waitForTimeout(700);
-  expect(await band.evaluate(el => el.style.getPropertyValue('--y'))).not.toBe(y1);
+  expect(await beam.evaluate(el => getComputedStyle(el).transform)).not.toBe(initial);
   expect(await page.evaluate(() => sessionStorage.getItem('jo-hero-intro'))).toBe('1');
 });
 
@@ -78,7 +75,7 @@ test('reduced motion shows the finished hero at once, with no intro and no anima
   await expect(hero(page)).not.toHaveClass(/is-intro/);
   await expect(page.getByRole('button', {name: 'Skip intro'})).toBeHidden();
   const s = await snapshot(page);
-  expect(s.orbY).toBeCloseTo(0.82, 1);
+  await expect(page.locator('.hero-orb')).toHaveCount(0);
   expect(s.h1).toBe(1);
   await expect(hero(page)).not.toHaveAttribute('data-ambient');
   await expect(page.locator('video')).toHaveCount(0);
@@ -88,24 +85,26 @@ test('without JavaScript the finished composition and light are server-rendered'
   const context = await browser.newContext({javaScriptEnabled: false, viewport: {width: 1440, height: 900}});
   const page = await context.newPage();
   await page.goto('/');
-  await expect(page.locator('.lf-slat:visible')).toHaveCount(11);
-  expect(await page.locator('.lf-band').first().evaluate(el => getComputedStyle(el).transform)).not.toBe('none');
+  await expect(page.locator('.hero-beam:visible')).toHaveCount(5);
+  await expect(page.locator('.hero-atmosphere')).toHaveCSS('opacity', '1');
+  expect(await page.locator('.hero-atmosphere').evaluate(el => getComputedStyle(el).backgroundImage)).toContain('radial-gradient');
   const s = await snapshot(page);
-  expect(s.orbY).toBeCloseTo(0.82, 1);
+  await expect(page.locator('.hero-orb')).toHaveCount(0);
   expect(s.h1).toBe(1);
   await expect(page.getByRole('button', {name: 'Skip intro'})).toBeHidden();
   await expect(page.locator('.cinema-copy .actions a')).toHaveCount(2);
   await context.close();
 });
 
-test('pointer-reactive light (desktop) brightens the slat under the pointer', async ({page}) => {
+test('spotlights sweep independently of pointer movement without recreating light panels', async ({page}) => {
   await page.setViewportSize({width: 1440, height: 900});
   await page.goto('/');
-  await page.getByRole('button', {name: 'Skip intro'}).click();
-  const slat = page.locator('.lf-band').first();
+  await page.keyboard.press('Shift');
+  const beam = page.locator('.hero-beam > i').first();
+  const before = await beam.evaluate(el => getComputedStyle(el).transform);
   await page.mouse.move(1400, 450);
-  await page.waitForTimeout(400);
-  const away = Number(await slat.evaluate(el => el.style.getPropertyValue('--t')));
+  await page.waitForTimeout(500);
   await page.mouse.move(40, 450);
-  await expect.poll(async () => Number(await slat.evaluate(el => el.style.getPropertyValue('--t')))).toBeGreaterThan(away);
+  await expect.poll(() => beam.evaluate(el => getComputedStyle(el).transform)).not.toBe(before);
+  await expect(page.locator('.lf, .lf-band')).toHaveCount(0);
 });

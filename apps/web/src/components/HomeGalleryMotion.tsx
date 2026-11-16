@@ -11,7 +11,8 @@ import {ringPoint} from '@/lib/gallery';
  * Homepage gallery: eight photographs orbiting the section title, adapted from the reference's ring
  * choreography (GALLERY-REFERENCE-MOTION.md).
  * 1. Burst → settle: cards start enlarged, tilted and pushed outward, then settle into the ring as the
- *    section arrives. Scroll-scrubbed, so it reverses exactly and is never left half-done after a jump.
+ *    section arrives. Scroll-scrubbed, so it reverses exactly and is never left half-done after a jump. The burst is
+ *    fitted to the section's own height, so no card ever reaches into the neighbouring sections.
  * 2. Orbit: the ring keeps turning counter-clockwise with the page and breathes gently (1 → 1.06 → 1);
  *    cards stay upright. Tied to scroll rather than time, so nothing moves on its own (WCAG 2.2.2).
  * 3. Ripple: one card after another, counter-clockwise, dims, tilts and pops above its neighbours. It plays
@@ -24,6 +25,8 @@ const RIPPLE_TILT = [-14, 18, -12, 16, -18, 12, -16, 14];
 /** Degrees the ring turns while settling, and while the visitor scrolls past it (both counter-clockwise). */
 const SPIN_IN = 40;
 const SPIN_ORBIT = 40;
+/** Space kept between a bursting card and its own section's edges (px): the burst never reaches into the next section. */
+const BURST_MARGIN = 16;
 
 export default function HomeGalleryMotion({children}: {children: ReactNode}) {
   const root = useRef<HTMLElement>(null);
@@ -43,6 +46,7 @@ export default function HomeGalleryMotion({children}: {children: ReactNode}) {
       const pops = cards.map(card => card.querySelector<HTMLElement>('.lens-card-pop')!);
       const registry: RevealRegistry = new Map();
       let removePointer = () => {};
+      let removeFit = () => {};
       // Reverting the scene rewinds the spin tweens, whose updates must not move the cards once it is gone.
       let alive = true;
 
@@ -71,6 +75,40 @@ export default function HomeGalleryMotion({children}: {children: ReactNode}) {
           }
         }) as (from?: number) => void;
 
+        // The burst is fitted to the room the section has: each card starts from its slot at the burst (ring turned by
+        // SPIN_IN), and its outward push and, only where there is no room, its enlargement are limited so the enlarged,
+        // tilted card stays inside the section with BURST_MARGIN to spare. Its horizontal push and tilt are unchanged.
+        // Measured from the cards' own layout boxes (not their animated layers), and again before every refresh.
+        const fits = cards.map(() => ({y: 0, scale: 1}));
+        const fitBurst = () => {
+          const saved = cards.map(card => [card.style.getPropertyValue('--cx'), card.style.getPropertyValue('--cy')]);
+          cards.forEach((card, i) => {
+            const {cx, cy} = ringPoint(i, count, SPIN_IN);
+            card.style.setProperty('--cx', cx);
+            card.style.setProperty('--cy', cy);
+          });
+          const box = section.getBoundingClientRect();
+          cards.forEach((card, i) => {
+            const slot = card.getBoundingClientRect();
+            const w = inner[i].offsetWidth, h = inner[i].offsetHeight;
+            const tilt = (Math.abs(BURST_TILT[i % 8]) * Math.PI) / 180;
+            const reach = h * Math.cos(tilt) + w * Math.sin(tilt); // the tilted card's height, before enlarging
+            const up = slot.top - box.top - BURST_MARGIN, down = box.bottom - slot.bottom - BURST_MARGIN;
+            const want = BURST_SCALE[i % 8] * (mobile ? 0.82 : 1);
+            const scale = Math.max(1, Math.min(want, (up + down + h) / reach));
+            const spread = (scale * reach - h) / 2; // how far it then reaches past its slot, above and below
+            const push = (Number(ringPoint(i, count, SPIN_IN).cy) * (mobile ? 34 : 55) * h) / 100;
+            fits[i] = {y: Math.min(Math.max(push, spread - up), down - spread), scale};
+          });
+          cards.forEach((card, i) => {
+            card.style.setProperty('--cx', saved[i][0]);
+            card.style.setProperty('--cy', saved[i][1]);
+          });
+        };
+        fitBurst();
+        ScrollTrigger.addEventListener('refreshInit', fitBurst);
+        removeFit = () => ScrollTrigger.removeEventListener('refreshInit', fitBurst);
+
         // 1. Burst → settle, scrubbed as the ring arrives.
         const settle = gsap.timeline({
           defaults: {ease: EASE.scrub},
@@ -85,11 +123,11 @@ export default function HomeGalleryMotion({children}: {children: ReactNode}) {
         settle.fromTo(spin, {settle: SPIN_IN}, {settle: 0, duration: 1, ease: 'power2.out', onUpdate: place}, 0);
         cards.forEach((card, i) => {
           // Pushed outward from where the card starts (the ring is still turned by SPIN_IN at that point).
-          const {cx, cy} = ringPoint(i, count, SPIN_IN);
+          const {cx} = ringPoint(i, count, SPIN_IN);
           const push = mobile ? 34 : 55;
           settle.fromTo(inner[i],
-            {xPercent: Number(cx) * push, yPercent: Number(cy) * push, scale: BURST_SCALE[i % 8] * (mobile ? 0.82 : 1), rotation: BURST_TILT[i % 8], '--shade': 0.62},
-            {xPercent: 0, yPercent: 0, scale: 1, rotation: 0, '--shade': 0, duration: 0.82, ease: 'power2.out'},
+            {xPercent: Number(cx) * push, y: () => fits[i].y, scale: () => fits[i].scale, rotation: BURST_TILT[i % 8], '--shade': 0.62},
+            {xPercent: 0, y: 0, scale: 1, rotation: 0, '--shade': 0, duration: 0.82, ease: 'power2.out'},
             0.04 + (i % 4) * 0.045);
         });
 
@@ -139,7 +177,7 @@ export default function HomeGalleryMotion({children}: {children: ReactNode}) {
       const releaseFocus = revealOnFocus(section, registry);
       return () => {
         alive = false;
-        cancelIdle(); releaseFocus(); removePointer();
+        cancelIdle(); releaseFocus(); removePointer(); removeFit();
         cards.forEach((card, i) => {
           const {cx, cy} = ringPoint(i, count);
           card.style.setProperty('--cx', cx);

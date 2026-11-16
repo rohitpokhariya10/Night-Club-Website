@@ -1,7 +1,8 @@
 import gsap from 'gsap';
-import {nearestSample, restPath, sampleCurve, smoothPath, type Samples} from './geometry';
+import {curvePoint, nearestSample, restPath, sampleCurve, smoothPath, smoothPoint, type Samples} from './geometry';
 import {StringModel} from './physics';
-import {cardParam, type InstrumentLayout} from '../experience';
+import {PhotoPendulum, slidePhotos} from './photoPhysics';
+import {cardParam, experienceMoments, type InstrumentLayout} from '../experience';
 
 /**
  * Binds one instrument layout (its server-rendered SVG strings and hanging cards) to the string physics.
@@ -35,6 +36,7 @@ type Options = {
   layout: InstrumentLayout;
   motion: boolean;
   onPluck?: (event: PluckEvent) => void;
+  positions?: Map<number, number>;
 };
 
 const SEGMENTS = 56;
@@ -60,9 +62,12 @@ type StringState = {
   side: number;
   lastStrum: number;
 };
-type CardState = {index: number; el: HTMLElement; swing: HTMLElement; string: number; s: number; nx: number; ny: number; theta: number; omega: number; written: boolean};
+type CardState = {
+  index: number; el: HTMLElement; swing: HTMLElement; string: number; s: number; x: number;
+  base: [number, number]; half: number; length: number; pendulum: PhotoPendulum; written: boolean;
+};
 
-export function createInstrument({root, svg, layout, motion, onPluck}: Options): Instrument {
+export function createInstrument({root, svg, layout, motion, onPluck, positions = new Map()}: Options): Instrument {
   const strings: StringState[] = [];
   svg.querySelectorAll<SVGGElement>('.ns-string').forEach(group => {
     const index = Number(group.dataset.string);
@@ -87,11 +92,58 @@ export function createInstrument({root, svg, layout, motion, onPluck}: Options):
     const placement = layout.cards[index];
     const swing = el.querySelector<HTMLElement>('.ns-swing');
     if (!placement || !swing || !strings[placement.string]) return;
-    const rest = strings[placement.string].rest;
-    const s = cardParam(layout, placement);
-    const k = Math.round(s * SEGMENTS);
-    cards.push({index, el, swing, string: placement.string, s, nx: rest.nx[k], ny: rest.ny[k], theta: 0, omega: 0, written: false});
+    const base = curvePoint(layout.strings[placement.string], cardParam(layout, placement));
+    const [rw, rh] = experienceMoments[index].ratio.split('/').map(Number);
+    const length = placement.drop + placement.w * rh / rw + 100;
+    const x = positions.get(index) ?? placement.x;
+    const s = cardParam(layout, {...placement, x});
+    // Reserve the resting tilt as well as the frame itself. Dynamic swing uses the remaining clearance.
+    const half = placement.w / 2 + Math.sin(Math.abs(placement.r) * Math.PI / 180) * length + 3;
+    cards.push({index, el, swing, string: placement.string, s, x, base, half, length, pendulum: new PhotoPendulum(length), written: false});
   });
+  const rails = strings.map(st => cards.filter(card => card.string === st.index).sort((a, b) => a.x - b.x));
+  const status = root.closest('section')?.querySelector<HTMLElement>('.ns-status');
+  const limits = (card: CardState): [number, number] => {
+    const rail = rails[card.string], i = rail.indexOf(card);
+    // Split the available space between two swinging neighbours. Keep outer prints inside the stage.
+    const left = i ? (card.x - card.half - rail[i - 1].x - rail[i - 1].half - 6) / 2 : card.x - card.half - 12;
+    const right = i < rail.length - 1 ? (rail[i + 1].x - rail[i + 1].half - card.x - card.half - 6) / 2 : layout.w - card.x - card.half - 12;
+    const degrees = (room: number) => Math.min(18, Math.asin(clamp(room / card.length, 0, 1)) * 180 / Math.PI);
+    // Positive CSS rotation moves a hanging print left.
+    return [-degrees(right), degrees(left)];
+  };
+  const anchor = (card: CardState): [number, number] => {
+    const st = strings[card.string];
+    return st.dirty ? smoothPoint(st.x, st.y, card.s) : curvePoint(layout.strings[card.string], card.s);
+  };
+  const paintCard = (card: CardState) => {
+    const [x, y] = anchor(card), angle = card.pendulum.angle;
+    const dx = (x - card.base[0]) * scale, dy = (y - card.base[1]) * scale;
+    if (Math.abs(dx) < 0.01 && Math.abs(dy) < 0.01 && angle === 0) {
+      if (card.written) card.swing.style.transform = '';
+      card.written = false;
+      return;
+    }
+    card.swing.style.transform = `translate3d(${dx.toFixed(3)}px,${dy.toFixed(3)}px,0) rotate(${angle.toFixed(3)}deg)`;
+    card.written = true;
+  };
+  const moveCard = (card: CardState, target: number) => {
+    const rail = rails[card.string];
+    const next = slidePhotos(rail, rail.indexOf(card), target, layout.w, 14, layout.w < 500 ? 10 : 20);
+    rail.forEach((other, i) => {
+      other.x = next[i];
+      other.s = cardParam(layout, {...layout.cards[other.index]!, x: other.x});
+      positions.set(other.index, other.x);
+    });
+    rail.forEach(other => {
+      const [min, max] = limits(other);
+      other.pendulum.angle = clamp(other.pendulum.angle, min, max);
+      paintCard(other);
+    });
+  };
+  const announce = (card: CardState) => {
+    if (status) status.textContent = `${experienceMoments[card.index].kicker} photograph at ${Math.round(card.x / layout.w * 100)} percent of its string.`;
+  };
 
   const responses = Array.from(root.querySelectorAll<HTMLElement>('.ns-response'));
   let nextResponse = 0;
@@ -104,11 +156,14 @@ export function createInstrument({root, svg, layout, motion, onPluck}: Options):
 
   // Pixels per layout unit, and the inverse for stroke widths that stay the same on screen at any size.
   let scale = 1;
+  let bounds: DOMRect;
   const measure = () => {
-    const width = svg.getBoundingClientRect().width;
+    bounds = svg.getBoundingClientRect();
+    const width = bounds.width;
     if (!width) return;
     scale = width / layout.w;
     svg.style.setProperty('--u', (1 / scale).toFixed(4));
+    cards.forEach(paintCard);
   };
   measure();
   const resize = new ResizeObserver(measure);
@@ -118,7 +173,7 @@ export function createInstrument({root, svg, layout, motion, onPluck}: Options):
   let awake = false;
   let visible = true;
   const wake = () => {
-    if (awake || !visible) return;
+    if (awake || !visible || document.hidden) return;
     awake = true;
     gsap.ticker.add(tick);
   };
@@ -164,25 +219,13 @@ export function createInstrument({root, svg, layout, motion, onPluck}: Options):
     }
     for (const card of cards) {
       const model = strings[card.string].model;
-      const moving = model.active;
-      const bob = moving ? model.displacementAt(card.s) : 0;
-      // The clip is fixed to the string, so the card follows the string's tilt there, with a little lag and sway.
-      const target = moving ? clamp((Math.atan(model.slopeAt(card.s) / strings[card.string].rest.length) * 180) / Math.PI * 1.15, -5, 5) : 0;
-      const steps = 4, h = dt / steps;
-      for (let k = 0; k < steps; k++) {
-        card.omega += (95 * (target - card.theta) - 7.5 * card.omega) * h;
-        card.theta += card.omega * h;
+      if (motion) {
+        const target = model.active ? clamp(Math.atan(model.slopeAt(card.s) / strings[card.string].rest.length) * 180 / Math.PI, -4, 4) : 0;
+        const [min, max] = limits(card);
+        card.pendulum.step(dt, target, min, max);
+        if (card.pendulum.active || model.active) busy = true;
       }
-      card.theta = clamp(card.theta, -7, 7);
-      if (!moving && Math.abs(card.theta) < 0.01 && Math.abs(card.omega) < 0.02) {
-        card.theta = 0;
-        card.omega = 0;
-        if (card.written) {card.swing.style.transform = ''; card.written = false;}
-        continue;
-      }
-      busy = true;
-      card.swing.style.transform = `translate3d(${(card.nx * bob * scale).toFixed(2)}px,${(card.ny * bob * scale).toFixed(2)}px,0) rotate(${card.theta.toFixed(3)}deg)`;
-      card.written = true;
+      paintCard(card);
     }
     if (!busy) sleep();
   }
@@ -197,13 +240,14 @@ export function createInstrument({root, svg, layout, motion, onPluck}: Options):
     const {x, y} = pointOn(st, s);
     track(gsap.fromTo(st.group, {'--hit': 0.35 + 0.65 * intensity}, {'--hit': 0, duration: 1.3, ease: 'power2.out', overwrite: 'auto'}));
     if (motion) {
-      // The pulse: one short dash per direction, starting at the pluck and running out to each end.
+      // The pulse: one short dash per direction, starting at the pluck and running out to each end. Dash lengths are
+      // fractions of pathLength="1", so GSAP must not round them to whole pixels (autoRound).
       const dash = 0.07;
       st.pulses.forEach(path => {
         const toEnd = path.dataset.dir === '1';
         track(gsap.fromTo(path,
           {strokeDashoffset: dash / 2 - s, opacity: 0.55 + 0.45 * intensity},
-          {strokeDashoffset: toEnd ? -1.02 : dash + 0.02, opacity: 0, duration: 0.85 + 0.6 * (toEnd ? 1 - s : s), ease: 'power1.out', overwrite: 'auto'}));
+          {strokeDashoffset: toEnd ? -1.02 : dash + 0.02, opacity: 0, duration: 0.85 + 0.6 * (toEnd ? 1 - s : s), ease: 'power1.out', overwrite: 'auto', autoRound: false}));
       });
     }
     const glow = responses[nextResponse++ % Math.max(1, responses.length)];
@@ -221,8 +265,7 @@ export function createInstrument({root, svg, layout, motion, onPluck}: Options):
 
   // ---- Pointer ----
   const toUnits = (event: PointerEvent): [number, number] => {
-    const box = svg.getBoundingClientRect();
-    return [((event.clientX - box.left) / box.width) * layout.w, ((event.clientY - box.top) / box.height) * layout.h];
+    return [(event.clientX - bounds.left) / scale, (event.clientY - bounds.top) / scale];
   };
   /** Signed distance from the string's resting point at sample k, along its normal. */
   const across = (st: StringState, k: number, ux: number, uy: number) => (ux - st.rest.x[k]) * st.rest.nx[k] + (uy - st.rest.y[k]) * st.rest.ny[k];
@@ -230,6 +273,83 @@ export function createInstrument({root, svg, layout, motion, onPluck}: Options):
   let grab: {st: StringState; s: number; k: number; id: number; x0: number; y0: number; moved: boolean} | null = null;
   let strum: {id: number; ux: number; uy: number; time: number} | null = null;
   let tap: {st: StringState; s: number; id: number; x: number; y: number; time: number} | null = null;
+
+  type PhotoDrag = {
+    card: CardState; id: number; mode: 'slide' | 'swing'; x0: number; y0: number;
+    startX: number; startAngle: number; radius: number; moved: boolean; time: number;
+  };
+  let photoDrag: PhotoDrag | null = null;
+  let suppressClickUntil = 0;
+
+  function finishPhoto(cancel = false) {
+    if (!photoDrag) return;
+    const drag = photoDrag;
+    photoDrag = null;
+    if (drag.moved) suppressClickUntil = performance.now() + 700;
+    drag.card.pendulum.release(performance.now(), cancel);
+    strings[drag.card.string].model.release();
+    delete drag.card.el.dataset.dragging;
+    delete root.dataset.grabbing;
+    if (drag.card.el.hasPointerCapture(drag.id)) drag.card.el.releasePointerCapture(drag.id);
+    if (drag.moved) announce(drag.card);
+    wake();
+  }
+
+  function movePhoto(event: PointerEvent) {
+    const drag = photoDrag;
+    if (!drag || event.pointerId !== drag.id) return;
+    const dx = event.clientX - drag.x0, dy = event.clientY - drag.y0;
+    if (!drag.moved) {
+      if (Math.hypot(dx, dy) < (event.pointerType === 'touch' ? 9 : 6)) return;
+      // Give vertical touch swipes to the browser before capturing; horizontal gestures belong to the print.
+      if (event.pointerType === 'touch' && Math.abs(dy) > Math.abs(dx) * 1.2) {finishPhoto(true); return;}
+      drag.moved = true;
+      drag.card.el.setPointerCapture(event.pointerId);
+      drag.card.el.dataset.dragging = drag.mode;
+      root.dataset.grabbing = 'photo';
+      drag.card.pendulum.grab(event.timeStamp);
+    }
+    event.preventDefault();
+    const st = strings[drag.card.string];
+    if (drag.mode === 'slide' || !motion) {
+      const previous = drag.card.x;
+      moveCard(drag.card, drag.startX + dx / scale);
+      if (motion) {
+        const velocity = (drag.card.x - previous) / Math.max(8, event.timeStamp - drag.time);
+        const [min, max] = limits(drag.card);
+        drag.card.pendulum.pull(clamp(velocity * 3, -5, 5), event.timeStamp, min, max);
+      }
+    } else {
+      const [min, max] = limits(drag.card);
+      drag.card.pendulum.pull(drag.startAngle - Math.atan2(dx / scale, drag.radius + dy / scale) * 180 / Math.PI, event.timeStamp, min, max);
+    }
+    // Silent local tension: this is a hand moving a print, not an intentional musical pluck.
+    if (motion) st.model.hold(drag.card.s, clamp(Math.abs(dx / scale) * 0.025 + Math.abs(dy / scale) * 0.04, 0, 7));
+    drag.time = event.timeStamp;
+    paintCard(drag.card);
+    wake();
+  }
+
+  const preventDragClick = (event: MouseEvent) => {
+    if (event.detail !== 0 && performance.now() < suppressClickUntil) {
+      event.preventDefault();
+      event.stopPropagation();
+      suppressClickUntil = 0;
+    }
+  };
+  const onKeyDown = (event: KeyboardEvent) => {
+    if (event.key === 'Escape' && photoDrag) {finishPhoto(true); return;}
+    if (event.altKey || event.ctrlKey || event.metaKey || !['ArrowLeft', 'ArrowRight', 'Home', 'End'].includes(event.key)) return;
+    const el = (event.target as Element).closest<HTMLElement>('.ns-card');
+    const card = cards.find(item => item.el === el);
+    if (!card) return;
+    event.preventDefault();
+    finishPhoto(true);
+    const step = (event.shiftKey ? 48 : 16) / scale;
+    moveCard(card, event.key === 'Home' ? 0 : event.key === 'End' ? layout.w : card.x + (event.key === 'ArrowLeft' ? -step : step));
+    if (motion && visible) {strings[card.string].model.strike(card.s, 2); wake();}
+    announce(card);
+  };
 
   const setNear = (st: StringState, amount: number, ux?: number, uy?: number) => {
     st.nearTarget = amount;
@@ -252,7 +372,8 @@ export function createInstrument({root, svg, layout, motion, onPluck}: Options):
 
   function letGo(sound = true) {
     if (!grab) return;
-    const {st, s, moved} = grab;
+    const {st, s, moved, id} = grab;
+    grab = null;
     const held = st.model.displacementAt(s);
     let intensity: number;
     if (!moved && Math.abs(held) < 12) {
@@ -264,16 +385,26 @@ export function createInstrument({root, svg, layout, motion, onPluck}: Options):
       st.model.release();
       intensity = clamp(Math.abs(held) / layout.maxPull, 0.18, 1);
     }
-    if (root.hasPointerCapture(grab.id)) root.releasePointerCapture(grab.id);
+    if (root.hasPointerCapture(id)) root.releasePointerCapture(id);
     delete root.dataset.grabbing;
-    grab = null;
     if (sound) respond(st, s, intensity);
     else wake();
   }
 
   function onPointerDown(event: PointerEvent) {
-    if (event.button !== 0 || grab || strum) return;
+    if (event.button !== 0 || !event.isPrimary || grab || strum || photoDrag) return;
+    measure();
+    // A new genuine click must work immediately after a previous drag (keyboard clicks are always allowed).
+    suppressClickUntil = 0;
     const target = event.target as Element;
+    const cardEl = target.closest<HTMLElement>('.ns-card');
+    const card = cards.find(item => item.el === cardEl);
+    if (card && target.closest('.ns-mount, .ns-plate')) {
+      const [, ay] = anchor(card), [, uy] = toUnits(event);
+      photoDrag = {card, id: event.pointerId, mode: target.closest('.ns-mount') ? 'slide' : 'swing', x0: event.clientX, y0: event.clientY,
+        startX: card.x, startAngle: card.pendulum.angle, radius: Math.max(70, uy - ay), moved: false, time: event.timeStamp};
+      return;
+    }
     if (target.closest('.ns-card, a, button')) return;
     const hit = target.closest<SVGPathElement>('.ns-hit');
     const [ux, uy] = toUnits(event);
@@ -309,6 +440,7 @@ export function createInstrument({root, svg, layout, motion, onPluck}: Options):
   }
 
   function onPointerMove(event: PointerEvent) {
+    if (photoDrag) {movePhoto(event); return;}
     if (grab && event.pointerId === grab.id) {
       const [ux, uy] = toUnits(event);
       const pull = across(grab.st, grab.k, ux, uy);
@@ -336,14 +468,19 @@ export function createInstrument({root, svg, layout, motion, onPluck}: Options):
       }
       strum = {id: strum.id, ux, uy, time: event.timeStamp};
     }
-    if (event.pointerType !== 'touch') hover(event);
+    // Over a print, its own string's answer stands (set on pointerenter); elsewhere, proximity decides.
+    if (event.pointerType !== 'touch' && !(event.target as Element).closest('.ns-card')) hover(event);
   }
 
   function onPointerUp(event: PointerEvent) {
-    if (grab && event.pointerId === grab.id) letGo(event.type !== 'pointercancel');
+    // Touch starts with implicit capture on the link. Transferring it to the card is not a cancelled gesture.
+    if (event.type === 'lostpointercapture' && photoDrag && (event.target !== photoDrag.card.el || photoDrag.card.el.hasPointerCapture(event.pointerId))) return;
+    if (photoDrag?.id === event.pointerId) {finishPhoto(event.type !== 'pointerup'); return;}
+    if (grab && event.pointerId === grab.id) letGo(event.type === 'pointerup');
     if (strum && event.pointerId === strum.id) {
-      if (root.hasPointerCapture(strum.id)) root.releasePointerCapture(strum.id);
+      const id = strum.id;
       strum = null;
+      if (root.hasPointerCapture(id)) root.releasePointerCapture(id);
     }
     if (tap && event.pointerId === tap.id) {
       const still = Math.hypot(event.clientX - tap.x, event.clientY - tap.y) < 10 && event.timeStamp - tap.time < 600;
@@ -366,8 +503,9 @@ export function createInstrument({root, svg, layout, motion, onPluck}: Options):
     const st = strings[card.string];
     const answer = () => {
       const {x, y} = pointOn(st, card.s);
+      for (const other of strings) if (other && other !== st) setNear(other, 0);
       setNear(st, 0.7, x, y);
-      if (motion && !st.model.held) st.model.strike(card.s, 0.07 * layout.maxPull);
+      if (motion && visible && !photoDrag && !st.model.held) st.model.strike(card.s, 0.07 * layout.maxPull);
       wake();
     };
     const quiet = () => {setNear(st, 0); wake();};
@@ -381,6 +519,24 @@ export function createInstrument({root, svg, layout, motion, onPluck}: Options):
   root.addEventListener('pointermove', onPointerMove);
   root.addEventListener('pointerup', onPointerUp);
   root.addEventListener('pointercancel', onPointerUp);
+  root.addEventListener('lostpointercapture', onPointerUp);
+  root.addEventListener('click', preventDragClick, true);
+  root.addEventListener('keydown', onKeyDown);
+  // Uncaptured short clicks may finish outside the stage; blur/visibility changes must never leave a held card.
+  window.addEventListener('pointerup', onPointerUp);
+  const cancelGestures = () => {
+    finishPhoto(true);
+    if (grab) letGo(false);
+    const id = strum?.id;
+    strum = null;
+    if (id !== undefined && root.hasPointerCapture(id)) root.releasePointerCapture(id);
+    tap = null;
+  };
+  const onScroll = () => {cancelGestures(); measure();};
+  const onVisibility = () => {if (document.hidden) {cancelGestures(); sleep();} else if (visible) wake();};
+  window.addEventListener('blur', cancelGestures);
+  window.addEventListener('scroll', onScroll, {passive: true});
+  document.addEventListener('visibilitychange', onVisibility);
   root.addEventListener('pointerleave', onPointerLeave);
   // A drag that starts on a string must never become a native drag or a text selection.
   const noDrag = (event: Event) => event.preventDefault();
@@ -389,12 +545,10 @@ export function createInstrument({root, svg, layout, motion, onPluck}: Options):
   // Off screen, nothing runs; coming back, everything is at rest.
   const observer = new IntersectionObserver(([entry]) => {
     visible = entry.isIntersecting;
-    if (visible) return;
-    if (grab) letGo(false);
-    strum = null;
-    tap = null;
+    if (visible) {wake(); return;}
+    cancelGestures();
     for (const st of strings) if (st) {st.model.reset(); st.nearTarget = 0;}
-    for (const card of cards) {card.theta = 0; card.omega = 0;}
+    for (const card of cards) card.pendulum.reset();
     tick(0, 16);
     sleep();
   });
@@ -405,7 +559,8 @@ export function createInstrument({root, svg, layout, motion, onPluck}: Options):
     pluck(index, {s = 0.32, intensity = 0.6} = {}) {
       const st = strings[index];
       if (!st) return;
-      if (motion) st.model.strike(s, (0.28 + 0.4 * intensity) * layout.maxPull);
+      // Off screen the ticker sleeps, so a strike would sit in the model and play out later: only sound and light.
+      if (motion && visible) st.model.strike(s, (0.28 + 0.4 * intensity) * layout.maxPull);
       respond(st, s, intensity);
     },
     shimmer() {
@@ -418,11 +573,14 @@ export function createInstrument({root, svg, layout, motion, onPluck}: Options):
     swingCard(index, degrees) {
       const card = cards.find(c => c.index === index);
       if (!card || !motion || !visible) return;
-      card.theta = degrees;
-      card.omega = 0;
+      if (photoDrag?.card === card) return;
+      const [min, max] = limits(card);
+      card.pendulum.angle = clamp(degrees, min, max);
+      card.pendulum.velocity = 0;
       wake();
     },
     destroy() {
+      cancelGestures();
       sleep();
       observer.disconnect();
       resize.disconnect();
@@ -430,6 +588,13 @@ export function createInstrument({root, svg, layout, motion, onPluck}: Options):
       root.removeEventListener('pointermove', onPointerMove);
       root.removeEventListener('pointerup', onPointerUp);
       root.removeEventListener('pointercancel', onPointerUp);
+      root.removeEventListener('lostpointercapture', onPointerUp);
+      root.removeEventListener('click', preventDragClick, true);
+      root.removeEventListener('keydown', onKeyDown);
+      window.removeEventListener('pointerup', onPointerUp);
+      window.removeEventListener('blur', cancelGestures);
+      window.removeEventListener('scroll', onScroll);
+      document.removeEventListener('visibilitychange', onVisibility);
       root.removeEventListener('pointerleave', onPointerLeave);
       root.removeEventListener('dragstart', noDrag);
       cardListeners.forEach(([el, type, fn]) => el.removeEventListener(type, fn));
@@ -447,6 +612,7 @@ export function createInstrument({root, svg, layout, motion, onPluck}: Options):
       }
       for (const card of cards) {
         card.swing.style.transform = '';
+        delete card.el.dataset.dragging;
         card.el.style.removeProperty('--resp');
       }
       responses.forEach(glow => gsap.set(glow, {clearProps: 'opacity,transform,left,top'}));

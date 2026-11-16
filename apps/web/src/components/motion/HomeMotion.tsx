@@ -6,8 +6,8 @@ import {ScrollTrigger} from 'gsap/ScrollTrigger';
 import {EASE, QUERIES} from '@/lib/motion/config';
 import {lineReveal, mediaOf, revealOnFocus, titleReveal, whenIdle, type RevealRegistry} from '@/lib/motion/primitives';
 import {getSmoothScroll} from '@/lib/motion/scroll';
-import {createLightField} from '@/lib/motion/lightField';
-import {INTRO_START, RESTING} from '@/lib/motion/lightShape';
+import {createCrowd} from '@/lib/motion/crowd';
+import {createHeadlineReflection} from '@/lib/motion/headlineReflection';
 
 const q = (root: ParentNode | null | undefined, selector: string) => root?.querySelector<HTMLElement>(selector) ?? null;
 const qa = (root: ParentNode | null | undefined, selector: string) => Array.from(root?.querySelectorAll<HTMLElement>(selector) ?? []);
@@ -25,10 +25,18 @@ export default function HomeMotion() {
     if (!root) return;
     gsap.registerPlugin(ScrollTrigger);
     const media = gsap.matchMedia();
-    media.add({motion: QUERIES.motion, mobile: QUERIES.mobile}, context => {
+    // `reduce` is listed so the callback also runs for reduced motion on wide screens: gsap.matchMedia only calls a
+    // conditions callback when at least one condition matches, and there both `motion` and `mobile` are false.
+    media.add({motion: QUERIES.motion, reduce: '(prefers-reduced-motion: reduce)', mobile: QUERIES.mobile}, context => {
       const {motion, mobile} = context.conditions as {motion: boolean; mobile: boolean};
       // Reduced motion: the server-rendered resting composition is the hero; never hold the intro state.
-      if (!motion) {document.documentElement.classList.remove('hero-intro'); return;}
+      if (!motion) {
+        document.documentElement.classList.remove('hero-intro');
+        // Reduced motion: the scene is complete and still; the crowd is drawn once, standing.
+        const host = q(root, '.hero-crowd');
+        const still = host ? createCrowd(host, {mobile, still: true}) : null;
+        return () => still?.destroy();
+      }
       const scene: Scene = {root, mobile, registry: new Map()};
       // The hero is on screen at load, so its scene starts immediately.
       const releaseHero = heroScene(scene);
@@ -72,23 +80,19 @@ const markIntroSeen = () => {try {sessionStorage.setItem(INTRO_KEY, '1');} catch
 
 /**
  * The hero. Two parts:
- * 1. The animated light hero (PINTEREST-HERO-REFERENCE.md). On the first homepage view of a session
- *    it plays the measured intro: light only, a U-shaped band with the orb at its centre; the band
- *    deepens; the headline ghosts in blurred; the orb falls (power2.out) as the band tilts; nav, copy,
- *    actions and labels arrive. After that, the light keeps flowing (ambient loop) and the brightest
- *    region follows the pointer on desktop (secondary reference). It can be skipped at any time.
+ * 1. The room's soft backlight and ceiling beams reveal around the original headline/crowd intro.
+ *    Afterward, inner beam elements sweep independently; the outer rigs belong to the intro and scroll scene.
+ *    The entire ambient timeline pauses offscreen and resumes from its existing phase.
  * 2. Sequence A of the scroll choreography (DELTA-MOTION-REFERENCE.md): the hero holds and recedes
  *    while the page rises over it (desktop/tablet); on phones, a native-scroll exit.
  */
 function heroScene({root, mobile}: Scene) {
   const html = document.documentElement;
   const hero = q(root, '.cinema-hero');
-  const field = q(hero, '.lf');
-  if (!hero || !field) {html.classList.remove('hero-intro'); return () => {};}
+  if (!hero) {html.classList.remove('hero-intro'); return () => {};}
   const layer = q(hero, '.cinema-media');
   const veil = q(hero, '.cinema-veil');
   const orbit = q(hero, '.cinema-orbit');
-  const orb = q(hero, '.hero-orb');
   const copy = q(hero, '.cinema-copy');
   const foot = q(hero, '.cinema-foot');
   const skip = q(hero, '.hero-skip');
@@ -97,17 +101,32 @@ function heroScene({root, mobile}: Scene) {
   // Hand over from the pre-paint class before any layout read, so a focused Skip button is never hidden.
   html.classList.remove('hero-intro');
   if (playIntro) hero.classList.add('is-intro');
-  const light = createLightField(field, playIntro ? INTRO_START : RESTING);
-  const s = light.state;
+  // The room (HERO-NIGHTCLUB-REBUILD-REPORT.md): ceiling beams (rig = scroll, light = ambient sway), the scroll-driven
+  // ember wash and light sweep, and the unchanged crowd against a soft stage glow.
+  const beamRigs = qa(hero, '.hero-beam');
+  const beamLights = qa(hero, '.hero-beam > i');
+  const beamField = q(hero, '.hero-beams');
+  const atmosphere = q(hero, '.hero-atmosphere');
+  const wash = q(hero, '.hero-wash');
+  const sweep = q(hero, '.hero-sweep');
+  const crowdHost = q(hero, '.hero-crowd');
+  const crowd = crowdHost ? createCrowd(crowdHost, {mobile}) : null;
 
-  // Ambient flow after the intro: incommensurate sine cycles, like the reference's continuous drift.
-  const ambient = gsap.timeline({paused: true})
-    .to(s, {phase: `+=${Math.PI * 2}`, duration: 9, ease: 'none', repeat: -1}, 0)
-    .to(s, {tilt: 0.24, duration: 5.6, ease: 'sine.inOut', yoyo: true, repeat: -1}, 0)
-    .to(s, {bow: 0.15, duration: 7.4, ease: 'sine.inOut', yoyo: true, repeat: -1}, 0)
-    .to(s, {wave: 0.085, duration: 4.2, ease: 'sine.inOut', yoyo: true, repeat: -1}, 0)
-    .to(s, {core: 0.22, duration: 6.3, ease: 'sine.inOut', yoyo: true, repeat: -1}, 0)
-    .to(s, {mid: 0.56, duration: 8.2, ease: 'sine.inOut', yoyo: true, repeat: -1}, 0);
+  // Each inner beam owns its idle rotation; ScrollTrigger rotates only the outer rig.
+  // A quarter-cycle ease out of the static pose joins a full sine sweep with no velocity jump at the turn.
+  // Distinct periods/directions keep the room from moving in unison. No animated blur or per-frame layout reads.
+  const reflection = createHeadlineReflection(hero, mobile);
+  const ambient = gsap.timeline({paused: true, onUpdate: reflection.update});
+  const sweeps = [
+    {angle: 6.5, period: 9.4}, {angle: -8, period: 11.8}, {angle: 5.5, period: 8.6},
+    {angle: -6.8, period: 10.7}, {angle: 7.2, period: 12},
+  ];
+  beamLights.forEach((beam, i) => {
+    const {angle, period} = sweeps[i % sweeps.length];
+    const amplitude = angle * (mobile ? 0.65 : 1);
+    ambient.to(beam, {rotation: amplitude, duration: period / 4, ease: 'sine.out'}, 0)
+      .to(beam, {rotation: -amplitude, duration: period / 2, ease: 'sine.inOut', repeat: -1, yoyo: true}, period / 4);
+  });
 
   // The light only runs while it can be seen.
   let visible = true;
@@ -115,69 +134,60 @@ function heroScene({root, mobile}: Scene) {
   let introDone = !playIntro;
   function update() {
     const active = visible && !covered && !document.hidden;
-    if (active) light.start(); else light.stop();
+    if (active) crowd?.start(); else crowd?.stop();
     if (active && introDone) ambient.play(); else ambient.pause();
+    reflection.update();
     hero!.dataset.ambient = active && introDone ? 'running' : 'paused';
   }
   const observer = new IntersectionObserver(([entry]) => {visible = entry.isIntersecting; update();});
   observer.observe(hero);
   document.addEventListener('visibilitychange', update);
 
-  // Secondary reference: the brightest light leans toward the pointer.
-  let releasePointer = () => {};
-  if (matchMedia('(hover: hover) and (pointer: fine)').matches) {
-    const toX = gsap.quickTo(s, 'px', {duration: 0.9, ease: 'power3.out'});
-    const toWeight = gsap.quickTo(s, 'pw', {duration: 0.8, ease: 'power2.out'});
-    const move = (event: PointerEvent) => {const box = hero.getBoundingClientRect(); toX((event.clientX - box.left) / box.width); toWeight(1);};
-    const leave = () => toWeight(0);
-    hero.addEventListener('pointermove', move);
-    hero.addEventListener('pointerleave', leave);
-    releasePointer = () => {hero.removeEventListener('pointermove', move); hero.removeEventListener('pointerleave', leave);};
-  }
-
   let intro: gsap.core.Timeline | null = null;
   let releaseSkip = () => {};
   if (playIntro) {
     const h1 = q(hero, '.cinema-copy h1');
-    const eyebrow = q(hero, '.hero-eyebrow');
     const description = q(hero, '.hero-description');
     const buttons = qa(hero, '.cinema-copy .actions .button');
-    const chips = qa(hero, '.hero-chip > span');
-    const decor = [q(hero, '.hero-lines'), q(hero, '.hero-dots')].filter(Boolean) as HTMLElement[];
+    const decor = [q(hero, '.hero-dots')].filter(Boolean) as HTMLElement[];
     const footItems = qa(hero, '.cinema-foot > *');
-    const faded = [header, eyebrow, description, ...buttons, ...chips, ...decor, ...footItems].filter(Boolean) as HTMLElement[];
-    const restY = mobile ? 0.83 : 0.82;
+    const faded = [header, description, ...buttons, ...decor, ...footItems].filter(Boolean) as HTMLElement[];
     // Opening frame (replaces the pre-paint CSS state without a visible jump).
     gsap.set(faded, {opacity: 0});
     gsap.set(h1, {opacity: 0.12, filter: 'blur(16px)', scale: 1.04});
-    gsap.set(orb, {y: () => (0.5 - restY) * hero.offsetHeight, scale: 0.82, opacity: 0});
+    gsap.set([beamField, atmosphere], {opacity: 0});
+    gsap.set(crowdHost, {opacity: 0, yPercent: 16});
+    if (crowd) crowd.energy = 0.15;
 
     const finish = () => {
       introDone = true;
       markIntroSeen();
       const skipHadFocus = document.activeElement === skip;
       hero.classList.remove('is-intro');
-      gsap.set([...faded, h1, orb], {clearProps: 'opacity,transform,filter'});
+      gsap.set([...faded, h1], {clearProps: 'opacity,transform,filter'});
+      gsap.set([beamField, atmosphere, crowdHost], {clearProps: 'opacity,transform'});
+      gsap.set(beamRigs, {clearProps: 'transform'});
+      if (crowd) crowd.energy = 1;
       releaseSkip();
       if (skipHadFocus) buttons[0]?.focus();
       update();
     };
     // Timings measured from the reference (T0 = intro start); see PINTEREST-HERO-REFERENCE.md.
-    intro = gsap.timeline({paused: true, onComplete: finish})
-      .to(s, {glow: 1, duration: 0.35, ease: 'power1.out'}, 0)
-      .to(orb, {opacity: 1, duration: 0.5, ease: 'power1.out'}, 0.08)
-      .to(s, {bow: 0.32, thick: 1.02, duration: 0.8, ease: 'sine.inOut'}, 0)
-      .to(s, {mid: RESTING.mid, bow: RESTING.bow, tilt: RESTING.tilt, wave: RESTING.wave, core: RESTING.core, spread: RESTING.spread, thick: RESTING.thick, duration: 1.4, ease: 'sine.inOut'}, 1.2)
-      .to(orb, {y: 0, scale: 1, duration: 1.7, ease: 'power2.out'}, 1.0)
+    intro = gsap.timeline({paused: true, onComplete: finish, onUpdate: reflection.update})
+      // Preserve the original scene duration after removing the logo badge's 1.0–2.7s tween.
+      .to({}, {duration: 2.7}, 0)
+      .to(atmosphere, {opacity: 1, duration: 1.6, ease: 'sine.inOut'}, 0.2)
       .to(h1, {opacity: 1, filter: 'blur(0px)', scale: 1, duration: 0.85, ease: 'power1.inOut'}, 1.0)
-      .fromTo(eyebrow, {y: 8}, {opacity: 1, y: 0, duration: 0.5, ease: 'power2.out'}, 1.0)
       .fromTo(description, {y: 12, filter: 'blur(6px)'}, {opacity: 1, y: 0, filter: 'blur(0px)', duration: 0.55, ease: 'power2.out'}, 1.45)
       .fromTo(buttons, {y: 14}, {opacity: 1, y: 0, duration: 0.5, stagger: 0.08, ease: 'power3.out'}, 1.5)
       .to(header, {opacity: 1, duration: 0.5, ease: 'power1.out'}, 1.5)
-      .fromTo(chips, {scale: 0.9}, {opacity: 1, scale: 1, duration: 0.5, stagger: 0.07, ease: 'power2.out'}, 1.55)
       .to(decor, {opacity: 1, duration: 0.6, ease: 'power1.out'}, 1.6)
       .to(footItems, {opacity: 1, duration: 0.5, ease: 'power1.out'}, 1.9)
-      .to(skip, {opacity: 0, duration: 0.3}, 2.1);
+      .to(skip, {opacity: 0, duration: 0.3}, 2.1)
+      .to(beamField, {opacity: 1, duration: 1.3, ease: 'power1.out'}, 0.2)
+      .fromTo(beamRigs, {rotation: i => (i % 2 ? 11 : -11)}, {rotation: 0, duration: 1.9, ease: 'power2.out'}, 0.2)
+      .to(crowdHost, {opacity: 1, yPercent: 0, duration: 1.5, ease: 'power2.out'}, 0.9)
+      .to(crowd ?? {}, {energy: 1, duration: 1.4, ease: 'power1.in'}, 1.2);
 
     // Start two frames after hydration commits, so start-up work can never swallow the opening.
     let frame = requestAnimationFrame(() => {frame = requestAnimationFrame(() => intro?.play());});
@@ -197,9 +207,31 @@ function heroScene({root, mobile}: Scene) {
     if (layer) gsap.set(layer, {visibility: isCovered ? 'hidden' : 'inherit'});
     update();
   };
+  /**
+   * Scroll lighting (second reference: light travels as the story moves on). Over the same scrubbed range as the
+   * recede: the rigs swing so the beams cross, a soft light sweeps across the room, an ember wash rises from the floor
+   * and ceiling, the crowd lifts its energy then recedes into the dark, and the beams dim as the next section arrives.
+   * Explicit start values (no immediate render), so the scrub never fights the intro or the ambient sway.
+   */
+  const sceneLighting = (timeline: gsap.core.Timeline) => {
+    // The rigs turn inward, so the beams converge on the section rising into view (rigs left of centre turn right).
+    const swing = [-22, -28, 10, 26, 20];
+    timeline
+      .to(beamLights, {opacity: 1, duration: 0.3, ease: 'power1.out'}, 0)
+      .fromTo(beamRigs, {rotation: 0}, {rotation: i => swing[i % swing.length] * (mobile ? 0.7 : 1), duration: 0.8, ease: 'sine.inOut', immediateRender: false}, 0)
+      .fromTo(beamField, {opacity: 1}, {opacity: 0.4, duration: 0.45, ease: 'power1.in', immediateRender: false}, 0.55)
+      .fromTo(sweep, {xPercent: -140}, {xPercent: 330, duration: 0.9, ease: 'none', immediateRender: false}, 0.05)
+      .fromTo(sweep, {opacity: 0}, {opacity: 1, duration: 0.3, ease: 'power1.out', immediateRender: false}, 0.08)
+      .to(sweep, {opacity: 0, duration: 0.3, ease: 'power1.in'}, 0.62)
+      .fromTo(wash, {opacity: 0}, {opacity: 0.9, duration: 0.55, ease: 'sine.inOut', immediateRender: false}, 0.1)
+      .fromTo(crowdHost, {yPercent: 0, opacity: 1}, {yPercent: 12, opacity: 0.5, duration: 1, immediateRender: false}, 0);
+    if (crowd) timeline.fromTo(crowd, {energy: 1}, {energy: 1.3, duration: 0.4, ease: 'sine.out', immediateRender: false}, 0)
+      .to(crowd, {energy: 0.55, duration: 0.6, ease: 'sine.in'}, 0.4);
+  };
   if (!mobile) {
     // CSS (.hero-hold sticky) holds the hero for one viewport while the page rises over it; this scrubs the recede.
-    gsap.timeline({
+    const recede = gsap.timeline({
+      onUpdate: reflection.update,
       defaults: {ease: EASE.scrub},
       scrollTrigger: {
         id: 'hero-recede', trigger: hero.parentElement?.classList.contains('hero-hold') ? hero.parentElement : hero,
@@ -212,9 +244,11 @@ function heroScene({root, mobile}: Scene) {
       .to(veil, {opacity: 0.62, duration: 1}, 0)
       .to(copy, {yPercent: -22, opacity: 0, ease: 'power1.in', duration: 0.45}, 0)
       .to(foot, {y: -24, opacity: 0, ease: 'power1.in', duration: 0.2}, 0);
+    sceneLighting(recede);
   } else {
     // Phones keep native scrolling: only the measured late copy exit and a gentle media lag.
-    gsap.timeline({
+    const exit = gsap.timeline({
+      onUpdate: reflection.update,
       defaults: {ease: EASE.scrub},
       scrollTrigger: {id: 'hero-exit', trigger: hero, start: 'top top', end: 'bottom top', scrub: true},
     })
@@ -223,6 +257,7 @@ function heroScene({root, mobile}: Scene) {
       .to(veil, {opacity: 0.45, duration: 1}, 0)
       .to(copy, {yPercent: -14, opacity: 0, ease: 'power1.in', duration: 0.55}, 0.2)
       .to(foot, {opacity: 0, duration: 0.25}, 0);
+    sceneLighting(exit);
   }
 
   // Keyboard users moving back into the hero always see it uncovered and readable.
@@ -237,9 +272,12 @@ function heroScene({root, mobile}: Scene) {
     hero.removeEventListener('focusin', uncover);
     document.removeEventListener('visibilitychange', update);
     observer.disconnect();
-    releasePointer();
     releaseSkip();
-    light.destroy();
+    ambient.kill();
+    reflection.destroy();
+    crowd?.destroy();
+    gsap.set([beamField, atmosphere, crowdHost, wash, sweep], {clearProps: 'opacity,transform'});
+    gsap.set([...beamRigs, ...beamLights], {clearProps: 'transform'});
     html.classList.remove('hero-intro');
     hero.classList.remove('is-intro');
     delete hero.dataset.ambient;
@@ -306,7 +344,7 @@ function nightOutScene({root, mobile, registry}: Scene) {
     // put, under the round link that sits across it. Explicit start value, no immediate render, so it never fights
     // the entrance's clip-path above.
     .fromTo(frame, {clipPath: 'inset(0% 0% 0% 0% round 0px)'}, {clipPath: mobile ? 'inset(0% 3% 0% 3% round 10px)' : 'inset(0% 4% 0% 4% round 18px)', immediateRender: false}, 0)
-    .to(grade, {backgroundColor: 'rgba(9, 9, 16, 0.5)'}, 0);
+    .to(grade, {backgroundColor: 'rgba(9, 11, 13, 0.5)'}, 0); // the page colour (--background) at half strength
 
   let releasePointer = () => {};
   if (!mobile && frame && film && stage && matchMedia('(hover: hover) and (pointer: fine)').matches) {
