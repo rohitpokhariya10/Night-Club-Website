@@ -1,0 +1,11 @@
+:root{--background:#090910;--surface:#10101c;--elevated:#191526;--text:#f8f4ff;--muted:#b8b4c6;--accent:#bd85fa;--button:#6e32a8;--accent-readable:#d2a7ff;--purple:#9259c5;--border:#30253f;--content:1320px;--space-section:clamp(72px,8vw,125px);--radius:2px;--ease:cubic-bezier(.2,.7,.2,1);--duration:260ms;--layer-header:40;--focus:#d2a7ff}
+/* Typography system: Syne (display) + Manrope (text), both SIL OFL, self-hosted via next/font/local.
+   One place for families, a clamp() scale, weights, line-heights and tracking (GALLERY-TYPOGRAPHY-REDESIGN-REPORT.md). */
+/* Family tokens live on body, where next/font defines --font-syne and --font-manrope (a :root definition would resolve before they exist). */
+body{--type-display:var(--font-syne),'Arial Black',Arial,sans-serif;--type-text:var(--font-manrope),Arial,sans-serif}
+:root{--fs-hero:clamp(40px,10.4vw,104px);--fs-h1:clamp(40px,6vw,84px);--fs-h2:clamp(30px,3.7vw,54px);--fs-h2-compact:clamp(26px,2.8vw,40px);--fs-h3:clamp(19px,1.6vw,23px);
+--fs-eyebrow:12px;--fs-body:15px;--fs-small:13px;
+--fw-display:700;--fw-heading:600;--fw-text:400;--fw-ui:600;
+--lh-display:1;--lh-heading:1.08;--lh-h3:1.25;--lh-body:1.75;
+--ls-display:-.04em;--ls-heading:-.03em;--ls-h3:-.012em;--ls-eyebrow:.24em;--ls-ui:.08em}
+@theme inline{--color-background:var(--background);--color-surface:var(--surface);--color-accent:var(--accent);--color-foreground:var(--text);--font-sans:var(--font-manrope);--font-display:var(--font-syne)}

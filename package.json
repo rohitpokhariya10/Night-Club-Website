@@ -1,0 +1,31 @@
+{
+  "name": "jimmy-os",
+  "private": true,
+  "workspaces": [
+    "apps/*",
+    "packages/*"
+  ],
+  "scripts": {
+    "dev": "concurrently -n web,api 'npm run dev -w @jimmy/web' 'npm run dev -w @jimmy/api'",
+    "build": "npm run build -w @jimmy/api && npm run build -w @jimmy/web",
+    "typecheck": "npm run typecheck --workspaces --if-present",
+    "lint": "eslint .",
+    "test": "tsx --test tests/api.test.ts",
+    "test:e2e": "playwright test",
+    "db:generate": "npm run db:generate -w @jimmy/api",
+    "db:migrate": "npm run db:migrate -w @jimmy/api",
+    "db:seed": "npm run db:seed -w @jimmy/api"
+  },
+  "devDependencies": {
+    "@playwright/test": "latest",
+    "@types/node": "latest",
+    "concurrently": "latest",
+    "eslint": "latest",
+    "eslint-config-next": "16.4.6",
+    "tsx": "latest",
+    "typescript": "latest",
+    "supertest": "latest",
+    "@types/supertest": "latest"
+  },
+  "type": "module"
+}

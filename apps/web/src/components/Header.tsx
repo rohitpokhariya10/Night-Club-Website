@@ -1,0 +1,15 @@
+'use client';
+import Image from 'next/image';
+import Link from 'next/link';
+import {usePathname} from 'next/navigation';
+import {Menu,X} from 'lucide-react';
+import {useEffect,useRef,useState} from 'react';
+import gsap from 'gsap';
+import {primaryLinks,secondaryLinks} from '@/lib/navigation';
+import {Arrow} from '@/components/ui';
+export default function Header(){const pathname=usePathname();const [open,setOpen]=useState(false);const [scrolled,setScrolled]=useState(false);const dialog=useRef<HTMLDialogElement>(null);const trigger=useRef<HTMLButtonElement>(null);
+useEffect(()=>{const scroll=()=>setScrolled(window.scrollY>30);scroll();window.addEventListener('scroll',scroll,{passive:true});return()=>window.removeEventListener('scroll',scroll)},[]);
+useEffect(()=>{let intro:gsap.core.Tween|undefined;if(open){dialog.current?.showModal();document.body.style.overflow='hidden';if(dialog.current&&matchMedia('(prefers-reduced-motion: no-preference)').matches)intro=gsap.from(dialog.current.querySelectorAll('.eyebrow,nav a,.menu-address'),{y:26,opacity:0,duration:.55,stagger:.035,ease:'power3.out',clearProps:'transform,opacity'});}else{dialog.current?.close();document.body.style.overflow='';}return()=>{intro?.progress(1).kill();document.body.style.overflow=''}},[open]);
+function close(){setOpen(false);trigger.current?.focus()}
+function trapFocus(e:React.KeyboardEvent<HTMLDialogElement>){if(e.key!=='Tab')return;const nodes=dialog.current?.querySelectorAll<HTMLElement>('a[href],button:not([disabled])');if(!nodes?.length)return;const first=nodes[0],last=nodes[nodes.length-1];if(e.shiftKey&&document.activeElement===first){e.preventDefault();last.focus()}else if(!e.shiftKey&&document.activeElement===last){e.preventDefault();first.focus()}}
+return <><header className={`header ${scrolled?'scrolled':''}`}><Link href="/" aria-label="Jimmy O’s home"><Image className="logo" src="/images/logo.png" width={150} height={72} alt="Jimmy O’s Del Mar" priority/></Link><nav aria-label="Main navigation">{primaryLinks.map(([name,href])=><Link key={href} href={href} aria-current={pathname===href?'page':undefined}>{name}</Link>)}</nav><Link className="header-book" href="/reservations">Book a Table <Arrow dir="up-right" size={15}/></Link><button className="menu-toggle" ref={trigger} onClick={()=>setOpen(true)} aria-label="Open navigation" aria-expanded={open}><Menu/></button></header><dialog onKeyDown={trapFocus} ref={dialog} className="mobile-menu" onCancel={close} onClose={()=>setOpen(false)} aria-label="Site navigation"><div className="menu-top"><Image src="/images/logo.png" width={125} height={60} alt="Jimmy O’s"/><button onClick={close} aria-label="Close navigation"><X/></button></div><p className="eyebrow">A GOOD NIGHT HAS MANY SIDES</p><nav>{[...primaryLinks,...secondaryLinks].map(([name,href],i)=><Link key={href} href={href} onClick={close} aria-current={pathname===href?'page':undefined}><small>{String(i+1).padStart(2,'0')}</small>{name}<Arrow dir="up-right"/></Link>)}</nav><p className="menu-address">225 15th Street · Del Mar, California</p></dialog></>}

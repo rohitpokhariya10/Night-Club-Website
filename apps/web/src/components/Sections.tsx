@@ -1,0 +1,4 @@
+import {MapPin} from 'lucide-react';
+import {Button,Label} from './ui';
+import type {Venue} from '@jimmy/shared';
+export function Visit({venue}:{venue:Venue}){return <section id="visit" className="section visit"><div><Label>FIND YOUR WAY HERE</Label><h2>A little coast.<br/>A lot of <span className="serif">character.</span></h2><address><MapPin size={18}/>{venue.address}</address><div className="actions"><Button href="https://www.google.com/maps/search/?api=1&query=Jimmy+O%27s+225+15th+Street+Del+Mar">Get Directions</Button><Button href="/reservations" outline>Book a Table</Button></div></div><div className="visit-info"><h3>See you at Jimmy O’s.</h3>{venue.hours.map(h=><div className="hours" key={h.days}><span>{h.days}</span><span>{h.hours}</span></div>)}<p className="muted">Hours shown in Pacific Time. Holiday hours may vary.</p><a href="tel:+18583503735">{venue.phone}</a><a href={`mailto:${venue.email}`}>{venue.email}</a></div></section>}

@@ -1,0 +1,103 @@
+generator client {
+ provider = "prisma-client-js"
+}
+datasource db {
+ provider = "postgresql"
+}
+model Venue {
+ id String @id
+ name String
+ description String
+ address String
+ phone String
+ email String
+ hours Json
+ socialLinks Json
+}
+model MenuCategory {
+ id String @id
+ name String
+ slug String @unique
+ displayOrder Int @default(0)
+ description String?
+ kind String @default("FOOD")
+ items MenuItem[]
+}
+model MenuItem {
+ id String @id
+ name String
+ description String
+ categoryId String
+ category MenuCategory @relation(fields:[categoryId],references:[id])
+ priceLabel String?
+ price Decimal? @db.Decimal(8,2)
+ image String?
+ available Boolean @default(true)
+ featured Boolean @default(false)
+ displayOrder Int @default(0)
+ @@index([available,featured,displayOrder])
+}
+model Event {
+ id String @id
+ slug String @unique
+ name String
+ description String
+ startsAt DateTime @db.Timestamptz(3)
+ endsAt DateTime @db.Timestamptz(3)
+ image String?
+ published Boolean @default(false)
+ @@index([published,startsAt])
+}
+model MediaAsset {
+ id String @id @default(cuid())
+ url String @unique
+ alt String
+ mediaType String
+ source String
+ ownership String
+}
+model Inquiry {
+ id String @id @default(cuid())
+ name String
+ email String
+ phone String?
+ type InquiryType
+ message String
+ eventDate DateTime? @db.Date
+ preferredTime String?
+ position String?
+ availability String?
+ guestCount Int?
+ consent Boolean
+ marketingConsent Boolean @default(false)
+ consentVersion String @default("2026-11-14")
+ createdAt DateTime @default(now())
+ status InquiryStatus @default(NEW)
+ @@index([status,createdAt])
+}
+enum InquiryType {
+ TABLE
+ PARTY
+ GENERAL
+ CATERING
+ JOB
+}
+enum InquiryStatus {
+ NEW
+ CONTACTED
+ CLOSED
+}
+
+model Special {
+ id String @id
+ slug String @unique
+ priceLabel String
+ title String
+ description String
+ startsAt DateTime @db.Timestamptz(3)
+ expiresAt DateTime? @db.Timestamptz(3)
+ schedule String?
+ image String?
+ published Boolean @default(false)
+ @@index([published,startsAt,expiresAt])
+}

@@ -1,0 +1,16 @@
+node_modules/
+.next/
+dist/
+.env
+.env.*
+!.env.example
+test-results/
+playwright-report/
+apps/api/generated/
+backups/
+
+# Local generated evidence and caches
+artifacts/
+*.tsbuildinfo
+*.log
+.DS_Store

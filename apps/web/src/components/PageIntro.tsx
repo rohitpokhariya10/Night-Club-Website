@@ -1,0 +1,3 @@
+import Link from 'next/link';
+import {Photo} from './ui';
+export default function PageIntro({overline,title,description,image='gallery-1.jpg',imageAlt='An evening at Jimmy O’s Del Mar',compact=false}:{overline:string;title:string;description:string;image?:string;imageAlt?:string;compact?:boolean}){return <section className={`page-intro ${compact?'compact':''}`}><Photo src={image} alt={imageAlt} priority sizes="100vw"/><div className="intro-shade"/><div className="intro-content"><Link href="/" className="breadcrumb">JIMMY O’S / {overline.toUpperCase()}</Link><p className="script">{overline}</p><h1>{title}</h1><p>{description}</p></div></section>}
