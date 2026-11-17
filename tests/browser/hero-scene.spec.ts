@@ -39,11 +39,11 @@ test('the crowd is drawn behind the headline area’s foot and moves to the musi
     await expect(page.locator(selector)).toHaveAttribute('aria-hidden', 'true');
     expect(await page.locator(selector).evaluate(el => getComputedStyle(el).pointerEvents)).toBe('none');
   }
-  // Even the highest raised hand stays clear of the description.
+  // Even the highest raised hand stays clear of the description. Low-alpha haze is not a silhouette.
   const copyBottom = await page.locator('.cinema-copy .hero-description').evaluate(el => el.getBoundingClientRect().bottom);
   const crowdTop = await page.evaluate(() => Math.min(...[...document.querySelectorAll<HTMLCanvasElement>('.hero-crowd canvas')].map(c => {
     const d = c.getContext('2d')!.getImageData(0, 0, c.width, c.height).data;
-    for (let y = 0; y < c.height; y++) for (let x = 0; x < c.width; x += 3) if (d[(y * c.width + x) * 4 + 3] > 40) return c.getBoundingClientRect().top + (y * c.clientHeight) / c.height;
+    for (let y = 0; y < c.height; y++) for (let x = 0; x < c.width; x += 3) if (d[(y * c.width + x) * 4 + 3] > 160) return c.getBoundingClientRect().top + (y * c.clientHeight) / c.height;
     return Infinity;
   })));
   expect(crowdTop).toBeGreaterThan(copyBottom + 24);

@@ -29,6 +29,8 @@ for (const [width, height] of [[1440, 900], [1920, 1080], [768, 1024], [1024, 90
     await expect(page.locator('.hero-atmosphere')).toHaveCount(1);
     await expect(page.locator('.hero-atmosphere')).toHaveCSS('opacity', '1');
     await expect(page.locator('.hero-beam:visible')).toHaveCount(width <= 700 ? 4 : 5);
+    expect(await page.locator('.hero-beam').evaluateAll(beams => beams.map(b => getComputedStyle(b).getPropertyValue('--beam').trim().toUpperCase())))
+      .toEqual(['#7C3AED', '#E91E83', '#2563EB', '#DC2626', '#06B6D4']);
     await expect(page.locator('.hero-crowd canvas')).toHaveCount(2);
     await expect(page.locator('h1')).toHaveText('DEL MAR. TURN IT UP.');
     await expect(page.locator('.cinema-copy .actions, .cinema-copy .button')).toHaveCount(0);
