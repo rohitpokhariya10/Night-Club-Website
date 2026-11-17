@@ -65,7 +65,8 @@ test('nothing plays or loads until the visitor presses play; then real audio pla
 
   await play(page);
   await expect(dj(page).getByRole('button', {name: 'Pause'})).toHaveAttribute('aria-pressed', 'true');
-  await expect(dj(page)).toContainText('On air');
+  await expect(dj(page)).toContainText('Now playing');
+  await expect(dj(page)).toContainText('Demo');
   const t0 = (await state(page)).t;
   await page.waitForTimeout(2500);
   const s = await state(page);
@@ -297,4 +298,117 @@ test('reduced motion: every control works and the music plays, with no turning p
   await expect.poll(async () => (await state(page)).index).toBe(1);
   await page.locator('.header nav').getByRole('link', {name: 'Menu', exact: true}).click();
   await expect(page.locator('.music-dock-vinyl')).toHaveCSS('animation-name', 'none');
+});
+
+/** Screen geometry of the tonearm: pivot, a grab point on the tube, the stylus tip and the record centre/radius. */
+const arm = (page: Page) => page.evaluate(() => {
+  const svg = document.querySelector<SVGSVGElement>('.dj-arm-svg')!, m = svg.getScreenCTM()!, a = Number(svg.dataset.arm) * Math.PI / 180;
+  const at = (x: number, y: number) => ({x: m.a * x + m.c * y + m.e, y: m.b * x + m.d * y + m.f});
+  const stylus = document.querySelector<SVGCircleElement>('.dj-stylus')!.getBoundingClientRect();
+  return {angle: Number(svg.dataset.arm), needle: svg.dataset.needle, cue: svg.dataset.cue, pivot: at(92, 11), grab: at(92 - 40 * Math.sin(a), 11 + 40 * Math.cos(a)),
+    stylus: {x: stylus.x + stylus.width / 2, y: stylus.y + stylus.height / 2}, center: at(50, 50), unit: m.a};
+});
+/** Take hold of the tube and swing it about the pivot to `to` degrees (the pointer travels on the arm's own arc). */
+async function swing(page: Page, to: number) {
+  const g = await arm(page), r = Math.hypot(g.grab.x - g.pivot.x, g.grab.y - g.pivot.y);
+  await page.mouse.move(g.grab.x, g.grab.y);
+  await page.mouse.down();
+  for (let i = 1; i <= 16; i++) {
+    const a = (g.angle + (to - g.angle) * i / 16) * Math.PI / 180;
+    await page.mouse.move(g.pivot.x - r * Math.sin(a), g.pivot.y + r * Math.cos(a));
+  }
+}
+
+test('the tonearm turns about its fixed pivot, within its limits, with the stylus fixed to the arm', async ({page}) => {
+  await home(page);
+  const rest = await arm(page);
+  expect(rest.angle).toBe(0);
+  expect(rest.needle).toBe('rest');
+  // Hovering the arm offers a grab.
+  await page.mouse.move(rest.grab.x, rest.grab.y);
+  await expect(page.locator('.dj-arm-hit')).toHaveCSS('cursor', 'grab');
+  const reach = Math.hypot(rest.stylus.x - rest.pivot.x, rest.stylus.y - rest.pivot.y);
+  await swing(page, 20);
+  const held = await arm(page);
+  expect(held.needle).toBe('held');
+  expect(held.angle).toBeCloseTo(20, 0);
+  // Rigid arm: the pivot does not move and the stylus stays the same distance from it.
+  expect(Math.hypot(held.pivot.x - rest.pivot.x, held.pivot.y - rest.pivot.y)).toBeLessThan(0.5);
+  expect(Math.abs(Math.hypot(held.stylus.x - held.pivot.x, held.stylus.y - held.pivot.y) - reach)).toBeLessThan(1);
+  // Limits: it never swings past the run-out (into the label) or back beyond its rest.
+  const g = await arm(page), r = Math.hypot(g.grab.x - g.pivot.x, g.grab.y - g.pivot.y);
+  await page.mouse.move(g.pivot.x - r * Math.sin(1.4), g.pivot.y + r * Math.cos(1.4)); // ~80°
+  const inner = await arm(page);
+  expect(inner.angle).toBeLessThan(45);
+  const label = 16.3 * inner.unit;
+  expect(Math.hypot(inner.stylus.x - inner.center.x, inner.stylus.y - inner.center.y)).toBeGreaterThan(label);
+  await page.mouse.move(g.pivot.x + r * Math.sin(0.5), g.pivot.y + r * Math.cos(0.5)); // beyond the rest
+  expect((await arm(page)).angle).toBe(0);
+  await page.mouse.up();
+  await expect.poll(async () => (await arm(page)).needle).toBe('rest');
+  expect((await state(page)).activated, 'putting the arm back without a drop plays nothing').toBe(false);
+});
+
+test('needle drop: lowered onto a groove it plays from the matching point; lifted it pauses in place; returned to its rest it stays paused', async ({page}) => {
+  await home(page);
+  // Over the record the display shows where the needle would land.
+  await swing(page, 27);
+  const over = await arm(page);
+  expect(Number(over.cue)).toBeGreaterThan(0.45);
+  expect(Number(over.cue)).toBeLessThan(0.75);
+  await expect(dj(page).locator('.dj-time')).toContainText('Cue');
+  await expect(page.locator('.dj-cue')).toHaveCSS('opacity', '1');
+  // The cue follows the stylus's real distance from the centre (outer groove = start, inner = end).
+  const radius = Math.hypot(over.stylus.x - over.center.x, over.stylus.y - over.center.y) / over.unit;
+  expect(Number(over.cue)).toBeCloseTo((40.5 - radius) / (40.5 - 20), 1);
+  await page.mouse.up();
+  await expect.poll(async () => (await state(page)).status).toBe('playing');
+  const duration = await page.evaluate(() => (window as unknown as {__jimmyOsMusic: {getSnapshot(): {duration: number}}}).__jimmyOsMusic.getSnapshot().duration);
+  const landed = (await state(page)).t;
+  expect(landed).toBeGreaterThan(Number(over.cue) * duration - 1);
+  expect(landed).toBeLessThan(Number(over.cue) * duration + 2.5);
+  expect((await arm(page)).needle).toBe('down');
+  expect(await loudness(page)).toBeGreaterThan(0.002);
+  // While it plays the arm creeps inward with the real position (and the platter turns).
+  const a1 = (await arm(page)).angle; await page.waitForTimeout(2500); const a2 = (await arm(page)).angle;
+  expect(a2).toBeGreaterThan(a1);
+  expect(a2 - a1).toBeLessThan(2);
+  // Lift it: the music pauses and keeps its place.
+  await swing(page, a2 + 3);
+  await expect.poll(async () => (await state(page)).status).toBe('paused');
+  const held = (await state(page)).t;
+  await page.waitForTimeout(500);
+  expect(Math.abs((await state(page)).t - held)).toBeLessThan(0.05);
+  // Release it off the record: it swings back to its rest and the music stays paused, still in place.
+  await swing(page, 4);
+  await page.mouse.up();
+  await expect.poll(async () => (await arm(page)).angle).toBeLessThan(0.1);
+  expect((await state(page)).status).toBe('paused');
+  expect(Math.abs((await state(page)).t - held)).toBeLessThan(0.05);
+  // Play from the rest: the arm returns to the groove for that position.
+  await dj(page).getByRole('button', {name: 'Play', exact: true}).click();
+  await expect.poll(async () => (await arm(page)).angle).toBeGreaterThan(20);
+  await expect.poll(async () => (await state(page)).status).toBe('playing');
+});
+
+test('next track brings the arm back to the lead-in; the seek slider moves position and arm together from the keyboard', async ({page}) => {
+  await home(page);
+  await swing(page, 30);
+  await page.mouse.up();
+  await expect.poll(async () => (await state(page)).status).toBe('playing');
+  const deep = (await arm(page)).angle;
+  await dj(page).getByRole('button', {name: 'Next track'}).click();
+  await expect.poll(async () => (await state(page)).index).toBe(1);
+  await expect.poll(async () => (await arm(page)).angle).toBeLessThan(deep - 8);
+  await expect.poll(async () => (await arm(page)).angle).toBeLessThan(17);
+  // Keyboard seeking (the accessible equivalent of the needle).
+  await dj(page).getByRole('button', {name: 'Pause'}).click();
+  const seek = dj(page).getByRole('slider', {name: 'Track position'});
+  await seek.focus();
+  const before = (await state(page)).t, angle = (await arm(page)).angle;
+  for (let i = 0; i < 10; i++) await page.keyboard.press('ArrowRight');
+  await expect.poll(async () => (await state(page)).t).toBeGreaterThan(before + 8);
+  await expect.poll(async () => (await arm(page)).angle).toBeGreaterThan(angle + 1);
+  await expect(seek).toHaveAttribute('aria-valuetext', /of 1:2\d/);
+  expect((await state(page)).status).toBe('paused');
 });

@@ -1,6 +1,6 @@
 // Real-browser recordings of the hero for review (final hero refinement), one .webm per session:
 //   <out>/session-<w>.webm   fresh load with the full intro, ~28 s of the room (two cycles of the slowest main sweep),
-//                            CTA hover, keyboard focus, scroll through the hand-off and back up (reverse)
+//                            header Book a Table hover and keyboard focus, scroll through the hand-off and back up
 //   <out>/reduced-<w>.webm   the reduced-motion composition (still scene, no flashes)
 // plus stills: intro frames, rest, hover, focus, 25/50/75% scroll, reverse. Logs page errors.
 // usage: [BASE_URL] [SIZES=1440x900,390x844] node scripts/visual/hero-final-record.mjs <outDir>
@@ -25,11 +25,11 @@ for (const [width, height] of sizes) {
       await page.locator('.cinema-hero[data-ambient="running"]').waitFor();
       await page.waitForTimeout(28000);
       await shot('rest');
-      const cta = page.locator('.hero-cta');
-      if (!phone) {await cta.hover(); await page.waitForTimeout(1200); await shot('cta-hover'); await page.mouse.move(40, height / 2); await page.waitForTimeout(600);}
-      await page.locator('.header-book').focus();
-      for (let i = 0; i < 40 && !(await cta.evaluate(el => el === document.activeElement)); i++) await page.keyboard.press('Tab');
-      await page.waitForTimeout(800); await shot('cta-focus');
+      const book = page.locator('.header-book');
+      if (!phone) {await book.hover(); await page.waitForTimeout(1200); await shot('book-hover'); await page.mouse.move(40, height / 2); await page.waitForTimeout(600);}
+      await page.evaluate(() => document.querySelector('.header a')?.focus());
+      for (let i = 0; i < 40 && !(await book.evaluate(el => el === document.activeElement)); i++) await page.keyboard.press('Tab');
+      await page.waitForTimeout(800); await shot('book-focus');
       await page.locator('body').click({position: {x: 5, y: height - 5}}).catch(() => {});
       const heroHeight = await page.locator('.cinema-hero').evaluate(el => el.clientHeight);
       let scrolled = 0;

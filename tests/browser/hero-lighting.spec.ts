@@ -32,7 +32,7 @@ for (const [width, height] of [[1440, 900], [1920, 1080], [768, 1024], [1024, 90
     await expect(page.locator('.hero-crowd canvas')).toHaveCount(2);
     await expect(page.locator('h1')).toHaveText('DEL MAR. TURN IT UP.');
     await expect(page.locator('.cinema-copy .actions, .cinema-copy .button')).toHaveCount(0);
-    await expect(page.locator('.cinema-copy .hero-cta')).toHaveAttribute('href', '/reservations');
+    await expect(page.locator('.cinema-hero a[href="/reservations"]')).toHaveCount(0);
     await expect(page.locator('.header-book')).toHaveAttribute('href', '/reservations');
     expect(await page.evaluate(() => document.documentElement.scrollWidth)).toBeLessThanOrEqual(width);
     const copy = await page.locator('.cinema-copy').boundingBox();
@@ -64,6 +64,8 @@ for (const [width, height] of [[1440, 900], [390, 844]]) {
         const started = performance.now();
         const samples: {time: number; angles: number[]}[] = [];
         while (performance.now() - started < 28000) {
+          // Read after the animation frame updates the transforms, rather than sampling a stale frame from a timer.
+          await new Promise<void>(resolve => requestAnimationFrame(() => resolve()));
           samples.push({time: (performance.now() - started) / 1000, angles: lights.map(el => {
             const m = new DOMMatrix(getComputedStyle(el).transform);
             return Math.atan2(m.b, m.a) * 180 / Math.PI;

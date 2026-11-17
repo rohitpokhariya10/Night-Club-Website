@@ -121,7 +121,7 @@ function heroScene({root, mobile}: Scene) {
   // No animated blur or per-frame layout reads.
   // The headline catches the two angled beams over it (rigs 2 and 4) as each passes a point 45% into its main sweep:
   // a glint of a second or so that slides across a couple of letters (0.2 line heights per degree of turn), some of
-  // the time, never in unison. The centre key light only washes it (and is the one that can catch the CTA's border).
+  // the time, never in unison. The centre key light only washes it.
   const sway = mobile ? 0.65 : 1;
   const catchPoint = (i: number) => ({offset: BEAM_PROGRAMS[i].a * 0.45 * sway, spread: 1.5 * sway, travel: 0.2});
   const reflection = createHeadlineReflection(hero, mobile, [catchPoint(1), null, catchPoint(3)]);
@@ -155,10 +155,9 @@ function heroScene({root, mobile}: Scene) {
   if (playIntro) {
     const h1 = q(hero, '.cinema-copy h1');
     const description = q(hero, '.hero-description');
-    const cta = q(hero, '.hero-cta');
     const decor = [q(hero, '.hero-dots')].filter(Boolean) as HTMLElement[];
     const footItems = qa(hero, '.cinema-foot > *');
-    const faded = [header, description, cta, ...decor, ...footItems].filter(Boolean) as HTMLElement[];
+    const faded = [header, description, ...decor, ...footItems].filter(Boolean) as HTMLElement[];
     // Opening frame (replaces the pre-paint CSS state without a visible jump).
     gsap.set(faded, {opacity: 0});
     gsap.set(h1, {opacity: 0.12, filter: 'blur(16px)', scale: 1.04});
@@ -180,15 +179,13 @@ function heroScene({root, mobile}: Scene) {
       update();
     };
     // Timings measured from the reference (T0 = intro start); see PINTEREST-HERO-REFERENCE.md.
-    // Order: the dark room, the beams finding the space, the crowd, the headline, the copy, then the booking action.
+    // Order: the dark room, the beams finding the space, the crowd, the headline, then the copy.
     intro = gsap.timeline({paused: true, onComplete: finish, onUpdate: relight})
       // Preserve the original scene duration after removing the logo badge's 1.0–2.7s tween.
       .to({}, {duration: 2.7}, 0)
       .to(atmosphere, {opacity: 1, duration: 1.6, ease: 'sine.inOut'}, 0.2)
       .to(h1, {opacity: 1, filter: 'blur(0px)', scale: 1, duration: 0.85, ease: 'power1.inOut'}, 1.0)
       .fromTo(description, {y: 12, filter: 'blur(6px)'}, {opacity: 1, y: 0, filter: 'blur(0px)', duration: 0.55, ease: 'power2.out'}, 1.45)
-      // The CTA fades in on opacity alone: its box never moves, so an early pointer is never chased by its target.
-      .to(cta, {opacity: 1, duration: 0.6, ease: 'power1.out'}, 1.75)
       .to(header, {opacity: 1, duration: 0.5, ease: 'power1.out'}, 1.5)
       .to(decor, {opacity: 1, duration: 0.6, ease: 'power1.out'}, 1.6)
       .to(footItems, {opacity: 1, duration: 0.5, ease: 'power1.out'}, 1.9)

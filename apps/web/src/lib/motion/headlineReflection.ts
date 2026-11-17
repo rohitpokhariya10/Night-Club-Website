@@ -71,10 +71,6 @@ export function createHeadlineReflection(hero: HTMLElement, mobile: boolean, gli
   const media = hero.querySelector<HTMLElement>('.cinema-media')!;
   const field = hero.querySelector<HTMLElement>('.hero-beams')!;
   const copy = hero.querySelector<HTMLElement>('.cinema-copy')!;
-  // The booking button's champagne hairline catches the same beams: a short highlight along the border while a beam's
-  // footprint passes over the button (its own catch angle, computed from where the button sits), never a loop.
-  const cta = hero.querySelector<HTMLElement>('.hero-cta');
-  let ctaBox: Box | null = null;
   let width = 1, height = 1, copyHeight = 1;
   let boxes: Box[] = [], beams: {x: number; angle: number; width: number; opacity: number}[] = [];
   let destroyed = false;
@@ -125,25 +121,11 @@ export function createHeadlineReflection(hero: HTMLElement, mobile: boolean, gli
         for (const [key, value] of Object.entries(vars)) if (overlay.style.getPropertyValue(key) !== value) overlay.style.setProperty(key, value);
       });
     });
-    if (cta && ctaBox) {
-      const box = {...ctaBox, y: ctaBox.y + copyY};
-      let best = {glint: 0, position: -60, angle: 90};
-      for (const light of projected) {
-        const depth = box.y + box.height / 2 - light.y;
-        if (depth <= 0) continue;
-        const centred = Math.atan((light.x - (box.x + box.width / 2)) / depth) * 180 / Math.PI;
-        const r = reflectedLight(light, box, {angle: centred, spread: mobile ? 1.1 : 1.4});
-        if (r.glint > best.glint) best = {glint: r.glint, position: r.glintPosition, angle: r.angle};
-      }
-      const vars = {'--cta-g': (best.glint * (mobile ? 0.8 : 1)).toFixed(3), '--cta-x': `${best.position.toFixed(2)}%`, '--cta-a': `${best.angle.toFixed(2)}deg`};
-      for (const [key, value] of Object.entries(vars)) if (cta.style.getPropertyValue(key) !== value) cta.style.setProperty(key, value);
-    }
   }
   const measure = () => {
     if (destroyed) return;
     width = hero.offsetWidth; height = hero.offsetHeight; copyHeight = copy.offsetHeight;
     boxes = lines.map(localBox);
-    ctaBox = cta ? localBox(cta) : null;
     beams = rigs.map((rig, i) => {
       const style = getComputedStyle(rig);
       return {x: parseFloat(style.getPropertyValue('--bx')) / 100 * width, angle: parseFloat(style.getPropertyValue('--br')),
@@ -158,6 +140,5 @@ export function createHeadlineReflection(hero: HTMLElement, mobile: boolean, gli
   return {update, destroy() {
     destroyed = true; observer.disconnect();
     overlays.forEach(overlay => {for (let i = 0; i < 3; i++) for (const key of ['rx', 'rw', 'ra', 'ri', 'rg', 'gx']) overlay?.style.removeProperty(`--${key}${i}`);});
-    for (const key of ['--cta-g', '--cta-x', '--cta-a']) cta?.style.removeProperty(key);
   }};
 }

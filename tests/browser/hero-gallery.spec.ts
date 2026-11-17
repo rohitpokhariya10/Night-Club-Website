@@ -28,7 +28,7 @@ for (const width of [390, 768, 1024, 1440]) test(`hero and gallery at ${width}px
   await expect(page.locator('.cinema-hero')).not.toContainText('COASTAL SOUL. LATE-NIGHT ENERGY.');
   await expect(page.locator('.cinema-copy .hero-description')).toHaveText('Come for the drinks. Stay for the music. Make the night yours.');
   await expect(page.locator('.cinema-copy .actions, .cinema-copy .button')).toHaveCount(0);
-  await expect(page.locator('.cinema-copy .hero-cta')).toHaveText('Book a Table');
+  await expect(page.locator('.cinema-hero a[href="/reservations"]')).toHaveCount(0);
   await expect(page.locator('.header-book')).toHaveAttribute('href', '/reservations');
   // The animated light hero replaces the old background video.
   await expect(page.locator('video')).toHaveCount(0);
@@ -39,7 +39,7 @@ for (const width of [390, 768, 1024, 1440]) test(`hero and gallery at ${width}px
   await expect(page.locator('.cinema-hero')).toHaveAttribute('data-ambient', 'running');
   await expect(page.locator('.cinema-copy h1')).toHaveCSS('opacity', '1');
   expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(true);
-  for (const selector of ['.cinema-copy h1', '.cinema-copy .hero-description', '.cinema-copy .hero-cta']) {
+  for (const selector of ['.cinema-copy h1', '.cinema-copy .hero-description']) {
     const box = await page.locator(selector).boundingBox();
     expect(box!.x).toBeGreaterThanOrEqual(0);
     expect(box!.x + box!.width).toBeLessThanOrEqual(width);
@@ -174,7 +174,7 @@ test('server-rendered hero and gallery remain visible without JavaScript', async
   await expect(page.locator('.header .logo')).toBeVisible();
   await expect(page.locator('.hero-skip')).toBeHidden();
   await expect(page.locator('.cinema-copy .actions a')).toHaveCount(0);
-  await expect(page.locator('.cinema-copy .hero-cta')).toBeVisible();
+  await expect(page.locator('.cinema-hero a[href="/reservations"]')).toHaveCount(0);
   await page.goto('/gallery');
   await expect(page.locator('.gallery-tile')).toHaveCount(9);
   await settleImages(page);
