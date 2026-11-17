@@ -15,8 +15,8 @@ for (const [width, height] of [[1440, 900], [1920, 1080], [768, 1024], [1024, 90
     await page.setViewportSize({width, height});
     await page.goto('/');
     await expect(page.locator('.cinema-hero')).toHaveAttribute('data-ambient', 'running');
-    await expect(page.getByRole('heading', {level: 1, name: 'DEL MAR AFTER DARK.', exact: true})).toHaveCount(1);
-    await expect(page.locator('h1')).toHaveText('DEL MAR AFTER DARK.');
+    await expect(page.getByRole('heading', {level: 1, name: 'DEL MAR. TURN IT UP.', exact: true})).toHaveCount(1);
+    await expect(page.locator('h1')).toHaveText('DEL MAR. TURN IT UP.');
     await expect(page.locator('.hero-reflection[aria-hidden="true"]')).toHaveCount(2);
     const geometry = await page.locator('.hero-line-text').evaluateAll(lines => lines.map(line => {
       const overlay = line.querySelector<HTMLElement>('.hero-reflection')!;
@@ -102,7 +102,7 @@ test('the solid headline survives disabled JavaScript and a decorative masking f
   try {
     const staticPage = await context.newPage();
     await staticPage.goto(process.env.PLAYWRIGHT_BASE_URL || 'http://localhost:3000');
-    await expect(staticPage.locator('h1')).toHaveText('DEL MAR AFTER DARK.');
+    await expect(staticPage.locator('h1')).toHaveText('DEL MAR. TURN IT UP.');
     await expect(staticPage.locator('h1')).toHaveCSS('opacity', '1');
   } finally {await context.close();}
   await page.goto('/'); await page.keyboard.press('Shift');

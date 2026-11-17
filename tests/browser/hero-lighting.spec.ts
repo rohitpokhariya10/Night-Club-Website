@@ -30,8 +30,9 @@ for (const [width, height] of [[1440, 900], [1920, 1080], [768, 1024], [1024, 90
     await expect(page.locator('.hero-atmosphere')).toHaveCSS('opacity', '1');
     await expect(page.locator('.hero-beam:visible')).toHaveCount(width <= 700 ? 4 : 5);
     await expect(page.locator('.hero-crowd canvas')).toHaveCount(2);
-    await expect(page.locator('h1')).toHaveText('DEL MAR AFTER DARK.');
+    await expect(page.locator('h1')).toHaveText('DEL MAR. TURN IT UP.');
     await expect(page.locator('.cinema-copy .actions, .cinema-copy .button')).toHaveCount(0);
+    await expect(page.locator('.cinema-hero a[href="/reservations"]')).toHaveCount(0);
     await expect(page.locator('.header-book')).toHaveAttribute('href', '/reservations');
     expect(await page.evaluate(() => document.documentElement.scrollWidth)).toBeLessThanOrEqual(width);
     const copy = await page.locator('.cinema-copy').boundingBox();
@@ -57,12 +58,14 @@ for (const [width, height] of [[1440, 900], [390, 844]]) {
       await page.goto('/');
       await page.screenshot({path: `${output}/after/intro-${width}.png`, caret: 'initial'});
       await expect(page.locator('.cinema-hero')).toHaveAttribute('data-ambient', 'running');
-      // 28 seconds covers two full cycles of the slowest 11.1-second sweep plus its entry.
+      // 28 seconds covers two full cycles of the slowest 13.1-second main sweep plus its ease-in.
       const samples = await page.evaluate(async () => {
         const lights = [...document.querySelectorAll('.hero-beam > i')].filter(el => getComputedStyle(el.parentElement!).display !== 'none');
         const started = performance.now();
         const samples: {time: number; angles: number[]}[] = [];
         while (performance.now() - started < 28000) {
+          // Read after the animation frame updates the transforms, rather than sampling a stale frame from a timer.
+          await new Promise<void>(resolve => requestAnimationFrame(() => resolve()));
           samples.push({time: (performance.now() - started) / 1000, angles: lights.map(el => {
             const m = new DOMMatrix(getComputedStyle(el).transform);
             return Math.atan2(m.b, m.a) * 180 / Math.PI;
@@ -72,7 +75,8 @@ for (const [width, height] of [[1440, 900], [390, 844]]) {
         return samples;
       });
       await writeFile(`${output}/measurements/idle-${width}.json`, JSON.stringify(samples, null, 2));
-      const cap = width <= 700 ? 6.12 : 9.41;
+      // Each fixture's program reaches at most ±13.5° (BEAM_PROGRAMS), scaled by 0.65 on phones.
+      const cap = width <= 700 ? 8.8 : 13.55;
       for (let beam = 0; beam < samples[0].angles.length; beam++) {
         const values = samples.map(sample => sample.angles[beam]);
         expect(Math.min(...values)).toBeLessThan(-3);

@@ -23,11 +23,12 @@ for (const width of [390, 768, 1024, 1440]) test(`hero and gallery at ${width}px
   await page.goto('/');
   await page.evaluate(() => document.fonts.ready);
   await expect(page.locator('.hero-frame')).toHaveCount(0);
-  await expect(page.locator('h1')).toHaveText('DEL MAR AFTER DARK.');
+  await expect(page.locator('h1')).toHaveText('DEL MAR. TURN IT UP.');
   await expect(page.locator('.cinema-copy .hero-eyebrow')).toHaveCount(0);
   await expect(page.locator('.cinema-hero')).not.toContainText('COASTAL SOUL. LATE-NIGHT ENERGY.');
-  await expect(page.locator('.cinema-copy .hero-description')).toHaveText('Come for the drinks. Stay for the music. Leave with a story.');
+  await expect(page.locator('.cinema-copy .hero-description')).toHaveText('Come for the drinks. Stay for the music. Make the night yours.');
   await expect(page.locator('.cinema-copy .actions, .cinema-copy .button')).toHaveCount(0);
+  await expect(page.locator('.cinema-hero a[href="/reservations"]')).toHaveCount(0);
   await expect(page.locator('.header-book')).toHaveAttribute('href', '/reservations');
   // The animated light hero replaces the old background video.
   await expect(page.locator('video')).toHaveCount(0);
@@ -166,13 +167,14 @@ test('server-rendered hero and gallery remain visible without JavaScript', async
   const context = await browser.newContext({javaScriptEnabled: false, viewport: {width: 390, height: 844}});
   const page = await context.newPage();
   await page.goto('/');
-  await expect(page.locator('h1')).toHaveText('DEL MAR AFTER DARK.');
+  await expect(page.locator('h1')).toHaveText('DEL MAR. TURN IT UP.');
   await expect(page.locator('h1')).toHaveCSS('opacity', '1');
   await expect(page.locator('.hero-beam:visible')).toHaveCount(4);
   await expect(page.locator('.hero-orb')).toHaveCount(0);
   await expect(page.locator('.header .logo')).toBeVisible();
   await expect(page.locator('.hero-skip')).toBeHidden();
   await expect(page.locator('.cinema-copy .actions a')).toHaveCount(0);
+  await expect(page.locator('.cinema-hero a[href="/reservations"]')).toHaveCount(0);
   await page.goto('/gallery');
   await expect(page.locator('.gallery-tile')).toHaveCount(9);
   await settleImages(page);

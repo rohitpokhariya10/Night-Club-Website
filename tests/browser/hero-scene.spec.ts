@@ -89,8 +89,8 @@ test('reduced motion: the scene is complete and still (the crowd standing, the l
   }
 });
 
-test('no layout shift from the hero scene while it loads, plays its intro and settles', async ({page}) => {
-  await page.setViewportSize({width: 1440, height: 900});
+for (const [width, height] of [[1440, 900], [390, 844]]) test(`no layout shift from the hero scene while it loads, plays its intro and settles at ${width}px`, async ({page}) => {
+  await page.setViewportSize({width, height});
   await page.addInitScript(() => {
     const w = window as unknown as {__cls: number};
     w.__cls = 0;

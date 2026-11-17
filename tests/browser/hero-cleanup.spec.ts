@@ -21,9 +21,10 @@ for (const [width, height] of [[1440, 900], [1024, 900], [768, 1024], [390, 844]
     await expect(page.locator('.hero-orb, .hero-orb-ring, .hero-orb-logo, .hero-eyebrow')).toHaveCount(0);
     await expect(page.locator('.cinema-hero')).not.toContainText('COASTAL SOUL. LATE-NIGHT ENERGY.');
     await expect(page.locator('.cinema-hero')).not.toContainText('DEL MAR, CALIFORNIA — GOOD TIMES LIVE HERE');
-    await expect(page.locator('h1')).toHaveText('DEL MAR AFTER DARK.');
-    await expect(page.locator('.hero-description')).toHaveText('Come for the drinks. Stay for the music. Leave with a story.');
+    await expect(page.locator('h1')).toHaveText('DEL MAR. TURN IT UP.');
+    await expect(page.locator('.hero-description')).toHaveText('Come for the drinks. Stay for the music. Make the night yours.');
     await expect(page.locator('.cinema-copy .actions, .cinema-copy .button')).toHaveCount(0);
+    await expect(page.locator('.cinema-hero a[href="/reservations"]')).toHaveCount(0);
     await expect(page.locator('.header-book')).toHaveAttribute('href', '/reservations');
     await expect(page.locator('.header .logo')).toBeVisible();
     await expect(page.getByRole('link', {name: 'Jimmy O’s home', exact: true})).toHaveAttribute('href', '/');

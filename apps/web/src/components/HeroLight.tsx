@@ -2,14 +2,16 @@ import type {CSSProperties} from 'react';
 /**
  * The ceiling rig (HERO-NIGHTCLUB-REBUILD-REPORT.md): warm volumetric beams falling into the room. Each beam is two
  * layers: the rig (.hero-beam, swung by scroll) and the light itself (i, swaying slowly on its own), so the two
- * motions never compete. x = rig position (% of width), r = resting angle, w = beam width (vw), tone = colour.
+ * motions never compete. x = rig position (% of width), r = resting angle, a = the fixture's beam angle (degrees: the
+ * cone widens with distance, so each beam has its own spread), w = fallback width (vw) for browsers without the
+ * container-unit/trigonometry CSS, tone = colour. A tight centre key light, two medium spots, two broad washes.
  */
-const BEAMS: {x: number; r: number; w: number; tone: 'spot' | 'amber' | 'ember' | 'steel'}[] = [
-  {x: 14, r: -16, w: 15, tone: 'steel'},
-  {x: 31, r: -7, w: 12, tone: 'amber'},
-  {x: 47, r: 4, w: 10, tone: 'spot'},
-  {x: 63, r: -5, w: 12, tone: 'ember'},
-  {x: 84, r: 15, w: 16, tone: 'amber'},
+const BEAMS: {x: number; r: number; a: number; w: number; tone: 'spot' | 'amber' | 'ember' | 'steel'}[] = [
+  {x: 14, r: -16, a: 14, w: 15, tone: 'steel'},
+  {x: 31, r: -7, a: 10, w: 12, tone: 'amber'},
+  {x: 47, r: 4, a: 7, w: 10, tone: 'spot'},
+  {x: 63, r: -5, a: 10.5, w: 12, tone: 'ember'},
+  {x: 84, r: 15, a: 15, w: 16, tone: 'amber'},
 ];
 const DOTS = [[8, 34], [18, 22], [27, 46], [37, 30], [44, 16], [58, 24], [63, 42], [71, 18], [79, 36], [91, 26], [96, 44], [52, 52], [33, 58], [88, 56]];
 
@@ -18,7 +20,7 @@ export function HeroScene() {
   return <>
     <div className="hero-atmosphere" aria-hidden="true" />
     <div className="hero-beams" aria-hidden="true">
-      {BEAMS.map((b, i) => <span className="hero-beam" data-tone={b.tone} key={i} style={{'--bx': `${b.x}%`, '--br': `${b.r}deg`, '--bw': `${b.w}vw`} as CSSProperties}><i /></span>)}
+      {BEAMS.map((b, i) => <span className="hero-beam" data-tone={b.tone} key={i} style={{'--bx': `${b.x}%`, '--br': `${b.r}deg`, '--ba': `${b.a}deg`, '--bw': `${b.w}vw`} as CSSProperties}><i /></span>)}
     </div>
     <span className="hero-wash" aria-hidden="true" />
     <span className="hero-sweep" aria-hidden="true" />

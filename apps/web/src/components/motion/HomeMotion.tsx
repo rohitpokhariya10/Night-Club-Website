@@ -8,6 +8,7 @@ import {lineReveal, mediaOf, revealOnFocus, titleReveal, whenIdle, type RevealRe
 import {getSmoothScroll} from '@/lib/motion/scroll';
 import {createCrowd} from '@/lib/motion/crowd';
 import {createHeadlineReflection} from '@/lib/motion/headlineReflection';
+import {BEAM_PROGRAMS, beamAngle, crowdLighting} from '@/lib/motion/beams';
 
 const q = (root: ParentNode | null | undefined, selector: string) => root?.querySelector<HTMLElement>(selector) ?? null;
 const qa = (root: ParentNode | null | undefined, selector: string) => Array.from(root?.querySelectorAll<HTMLElement>(selector) ?? []);
@@ -33,9 +34,12 @@ export default function HomeMotion() {
       if (!motion) {
         document.documentElement.classList.remove('hero-intro');
         // Reduced motion: the scene is complete and still; the crowd is drawn once, standing.
+        // The resting beams still light the people standing behind them, so the static scene keeps its rims.
         const host = q(root, '.hero-crowd');
         const still = host ? createCrowd(host, {mobile, still: true}) : null;
-        return () => still?.destroy();
+        const lighting = still ? crowdLighting(qa(root, '.hero-beam'), qa(root, '.hero-beam > i'), q(root, '.hero-beams'), still) : null;
+        lighting?.();
+        return () => {lighting?.destroy(); still?.destroy();};
       }
       const scene: Scene = {root, mobile, registry: new Map()};
       // The hero is on screen at load, so its scene starts immediately.
@@ -112,26 +116,24 @@ function heroScene({root, mobile}: Scene) {
   const crowdHost = q(hero, '.hero-crowd');
   const crowd = crowdHost ? createCrowd(crowdHost, {mobile}) : null;
 
-  // Each inner beam owns its idle rotation; ScrollTrigger rotates only the outer rig.
-  // A quarter-cycle ease out of the static pose joins a full sine sweep with no velocity jump at the turn.
-  // Distinct periods/directions keep the room from moving in unison. No animated blur or per-frame layout reads.
-  const sweeps = [
-    {angle: 7.8, period: 8.6}, {angle: -9.4, period: 10.6}, {angle: 6.4, period: 8.1},
-    {angle: -8.2, period: 9.7}, {angle: 8.6, period: 11.1},
-  ];
-  // The headline catches the two angled beams over it (rigs 2 and 4) as each passes a point 45% into its own sweep:
-  // a glint of a second or so that slides across a couple of letters (0.2 line heights per degree of turn), a third
-  // or so of the time, never in unison. The centre key light only washes it.
+  // Each inner beam owns its idle rotation (its own fixture program, see BEAM_PROGRAMS); ScrollTrigger rotates only
+  // the outer rig. One paused clock drives all five, so the room pauses offscreen and resumes from the same phase.
+  // No animated blur or per-frame layout reads.
+  // The headline catches the two angled beams over it (rigs 2 and 4) as each passes a point 45% into its main sweep:
+  // a glint of a second or so that slides across a couple of letters (0.2 line heights per degree of turn), some of
+  // the time, never in unison. The centre key light only washes it.
   const sway = mobile ? 0.65 : 1;
-  const catchPoint = (i: number) => ({offset: sweeps[i].angle * 0.45 * sway, spread: 1.5 * sway, travel: 0.2});
+  const catchPoint = (i: number) => ({offset: BEAM_PROGRAMS[i].a * 0.45 * sway, spread: 1.5 * sway, travel: 0.2});
   const reflection = createHeadlineReflection(hero, mobile, [catchPoint(1), null, catchPoint(3)]);
-  const ambient = gsap.timeline({paused: true, onUpdate: reflection.update});
-  beamLights.forEach((beam, i) => {
-    const {angle, period} = sweeps[i % sweeps.length];
-    const amplitude = angle * sway;
-    ambient.to(beam, {rotation: amplitude, duration: period / 4, ease: 'sine.out'}, 0)
-      .to(beam, {rotation: -amplitude, duration: period / 2, ease: 'sine.inOut', repeat: -1, yoyo: true}, period / 4);
-  });
+  const lighting = crowd ? crowdLighting(beamRigs, beamLights, beamField, crowd) : null;
+  const relight = () => {reflection.update(); lighting?.();};
+  const turn = beamLights.map(beam => gsap.quickSetter(beam, 'rotation', 'deg') as (value: number) => void);
+  const clock = {t: 0};
+  const ambient = gsap.timeline({paused: true, onUpdate: () => {
+    turn.forEach((set, i) => set(beamAngle(i % BEAM_PROGRAMS.length, clock.t) * sway));
+    relight();
+  }}).to(clock, {t: 86400, duration: 86400, ease: 'none'});
+  lighting?.();
 
   // The light only runs while it can be seen.
   let visible = true;
@@ -177,7 +179,8 @@ function heroScene({root, mobile}: Scene) {
       update();
     };
     // Timings measured from the reference (T0 = intro start); see PINTEREST-HERO-REFERENCE.md.
-    intro = gsap.timeline({paused: true, onComplete: finish, onUpdate: reflection.update})
+    // Order: the dark room, the beams finding the space, the crowd, the headline, then the copy.
+    intro = gsap.timeline({paused: true, onComplete: finish, onUpdate: relight})
       // Preserve the original scene duration after removing the logo badge's 1.0–2.7s tween.
       .to({}, {duration: 2.7}, 0)
       .to(atmosphere, {opacity: 1, duration: 1.6, ease: 'sine.inOut'}, 0.2)
@@ -234,7 +237,7 @@ function heroScene({root, mobile}: Scene) {
   if (!mobile) {
     // CSS (.hero-hold sticky) holds the hero for one viewport while the page rises over it; this scrubs the recede.
     const recede = gsap.timeline({
-      onUpdate: reflection.update,
+      onUpdate: relight,
       defaults: {ease: EASE.scrub},
       scrollTrigger: {
         id: 'hero-recede', trigger: hero.parentElement?.classList.contains('hero-hold') ? hero.parentElement : hero,
@@ -251,7 +254,7 @@ function heroScene({root, mobile}: Scene) {
   } else {
     // Phones keep native scrolling: only the measured late copy exit and a gentle media lag.
     const exit = gsap.timeline({
-      onUpdate: reflection.update,
+      onUpdate: relight,
       defaults: {ease: EASE.scrub},
       scrollTrigger: {id: 'hero-exit', trigger: hero, start: 'top top', end: 'bottom top', scrub: true},
     })
@@ -277,6 +280,7 @@ function heroScene({root, mobile}: Scene) {
     observer.disconnect();
     releaseSkip();
     ambient.kill();
+    lighting?.destroy();
     reflection.destroy();
     crowd?.destroy();
     gsap.set([beamField, atmosphere, crowdHost, wash, sweep], {clearProps: 'opacity,transform'});

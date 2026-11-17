@@ -8,3 +8,16 @@ test('form failure is honest and preserves entered data',async({page})=>{await p
 test('hero respects reduced motion and no-JS content remains available',async({browser,page})=>{await page.emulateMedia({reducedMotion:'reduce'});await page.goto('/');await page.waitForTimeout(1200);await expect(page.locator('video')).toHaveCount(0);expect(await page.evaluate(()=>getComputedStyle(document.documentElement).scrollBehavior)).toBe('auto');const context=await browser.newContext({javaScriptEnabled:false});const nojs=await context.newPage();await nojs.goto('/food-menu');await expect(nojs.getByText('Hummus & Pita',{exact:true})).toBeVisible();await context.close()});
 test('hero intro can be skipped and leaves a fully interactive hero',async({page})=>{await page.goto('/');await expect(page.locator('.cinema-hero')).toHaveClass(/is-intro/);await page.getByRole('button',{name:'Skip intro'}).click();await expect(page.locator('.cinema-hero')).not.toHaveClass(/is-intro/);await expect(page.locator('.cinema-hero')).toHaveAttribute('data-ambient','running');await expect(page.locator('.cinema-copy h1')).toHaveCSS('opacity','1');await expect(page.locator('.cinema-hero video')).toHaveCount(0);await page.locator('.header-book').click();await expect(page).toHaveURL('/reservations')});
 test('menu data, event schema, sitemap, aliases and 404',async({page,request})=>{await page.goto('/food-menu');await expect(page.locator('.menu-item')).toHaveCount(21);await page.goto('/drink-menu');await expect(page.locator('.menu-item')).toHaveCount(24);await page.goto('/events/thanksgiving-2026');expect(await page.locator('script[type="application/ld+json"]').allTextContents()).toContainEqual(expect.stringContaining('"@type":"Event"'));expect((await request.get('/sitemap.xml')).status()).toBe(200);await page.goto('/menu');await expect(page).toHaveURL('/food-menu');expect((await request.get('/events/not-real')).status()).toBe(404)});
+
+test('non-JSON gateway errors keep form data and show a useful retry message', async ({page}) => {
+  await page.route('**/api/v1/contact-inquiries', route => route.fulfill({status: 502, contentType: 'text/plain', body: 'Internal Server Error'}));
+  await page.goto('/contact');
+  await page.getByLabel('Your name').fill('Gateway Test');
+  await page.getByLabel('Email address').fill('gateway@example.invalid');
+  await page.locator('textarea').fill('Keep this inquiry when the service is unavailable.');
+  await page.getByLabel('I agree to be contacted').check();
+  await page.getByRole('button', {name: 'Send Inquiry'}).click();
+  await expect(page.getByRole('status')).toHaveText('Please try again or call (858) 350-3735.');
+  await expect(page.getByLabel('Your name')).toHaveValue('Gateway Test');
+  await expect(page.locator('textarea')).toHaveValue('Keep this inquiry when the service is unavailable.');
+});

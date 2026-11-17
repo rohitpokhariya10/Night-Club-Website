@@ -16,7 +16,7 @@ const COLLAPSED_KEY = 'jo-music-dock-collapsed';
  */
 export default function MusicDock() {
   const activated = useMusic(s => s.activated);
-  const consoleInView = useMusic(s => s.consoleInView);
+  const consoleInView = useMusic(s => s.consoleInView || s.boardInView);
   const index = useMusic(s => s.index);
   const status = useMusic(s => s.status);
   const error = useMusic(s => s.error);

@@ -32,6 +32,7 @@ export type MusicState = {
   duration: number;
   /** Whether the homepage console is on screen (the mini player stays out of its way meanwhile). */
   consoleInView: boolean;
+  boardInView: boolean;
 };
 
 export const INITIAL_VOLUME = 0.3;
@@ -42,7 +43,7 @@ type Ctx = typeof AudioContext;
 const contextClass = (): Ctx | undefined => typeof window === 'undefined' ? undefined
   : window.AudioContext ?? (window as typeof window & {webkitAudioContext?: Ctx}).webkitAudioContext;
 
-export const INITIAL_STATE: MusicState = {index: 0, status: 'idle', volume: INITIAL_VOLUME, muted: false, activated: false, error: null, duration: PLAYLIST[0].duration, consoleInView: false};
+export const INITIAL_STATE: MusicState = {index: 0, status: 'idle', volume: INITIAL_VOLUME, muted: false, activated: false, error: null, duration: PLAYLIST[0].duration, consoleInView: false, boardInView: false};
 
 export class MusicPlayer {
   readonly tracks: readonly Track[];
@@ -55,6 +56,7 @@ export class MusicPlayer {
   private master: GainNode | null = null;
   private meterData: Float32Array<ArrayBuffer> | null = null;
   private loadedIndex = -1;
+  private loopOwner: object | null = null;
   /** Diagnostics for tests: how many audio elements and contexts this visit has created (always at most 1 each). */
   readonly created = {elements: 0, contexts: 0};
 
@@ -173,6 +175,7 @@ export class MusicPlayer {
 
   /** Choose a track. Keeps playing if music was playing (or starting); otherwise just cues it. */
   select(index: number, autoplay = this.isRolling()) {
+    this.loopOwner = null; // A DJ track change takes playback back from the photo board.
     const next = ((index % this.tracks.length) + this.tracks.length) % this.tracks.length;
     if (next === this.state.index && this.loadedIndex === next) {
       if (this.audio) this.audio.currentTime = 0;
@@ -190,8 +193,18 @@ export class MusicPlayer {
   }
   private isRolling() {return Boolean(this.audio && (!this.audio.paused || this.state.status === 'loading'));}
   private onEnded() {
+    if (this.loopOwner && this.audio) {this.audio.currentTime = 0; void this.play(); return;}
     if (this.state.index < this.tracks.length - 1) this.select(this.state.index + 1, true);
     else {this.select(0, false); this.set({status: 'paused'});}
+  }
+
+  /** Photo experiences borrow the single player; their teardown cannot stop music subsequently chosen by the DJ. */
+  startLoop(index: number, owner: object) {this.select(index, true); this.loopOwner = owner;}
+  ownsLoop(owner: object) {return this.loopOwner === owner;}
+  stopLoop(owner: object) {
+    if (this.loopOwner !== owner) return;
+    this.loopOwner = null;
+    this.pause();
   }
 
   /**
@@ -237,6 +250,7 @@ export class MusicPlayer {
     this.set({consoleInView});
   }
   private consoleOwner: object | null = null;
+  setBoardInView(boardInView: boolean) {this.set({boardInView});}
 
   // ---- analysis (read by animation loops) ------------------------------------------------------------------------
   /** Fills `out` with the analyser's frequency bins (0–255); false when there is nothing to read. */

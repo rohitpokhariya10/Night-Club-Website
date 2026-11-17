@@ -39,7 +39,7 @@ for (const [width, height] of [[1440, 900], [390, 844]]) {
     await page.waitForTimeout(10000);
     expect(await fingerprint(page)).toEqual(still);
     await expect(page.locator('.hero-atmosphere')).toHaveCSS('opacity', '1');
-    await expect(page.locator('h1')).toHaveText('DEL MAR AFTER DARK.');
+    await expect(page.locator('h1')).toHaveText('DEL MAR. TURN IT UP.');
     await page.emulateMedia({reducedMotion: 'no-preference'});
     await expect(page.locator('.cinema-hero')).toHaveAttribute('data-ambient', 'running');
     await expect(page.locator('.hero-crowd canvas')).toHaveCount(2);
