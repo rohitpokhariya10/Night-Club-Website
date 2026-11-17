@@ -123,7 +123,7 @@ html.lenis.lenis-stopped{overflow:clip}
 
 /* The room's atmosphere is continuous, with soft pools of stage light behind the crowd.
    All gradient stops are feathered; the central content scrim remains above the entire scene. */
-.hero-atmosphere{position:absolute;inset:0;pointer-events:none;background:radial-gradient(ellipse 31% 28% at 22% 73%,color-mix(in srgb,var(--spot) 35%,transparent),transparent 78%),radial-gradient(ellipse 36% 30% at 76% 77%,color-mix(in srgb,var(--amber) 40%,transparent),transparent 80%),radial-gradient(ellipse 23% 20% at 48% 70%,color-mix(in srgb,var(--crimson) 23%,transparent),transparent 82%),radial-gradient(ellipse 65% 46% at 54% 67%,var(--surface),transparent 85%),var(--background)}
+.hero-atmosphere{position:absolute;inset:0;pointer-events:none;background:radial-gradient(ellipse 32% 28% at 18% 72%,rgb(124 58 237/.22),transparent 80%),radial-gradient(ellipse 28% 26% at 37% 77%,rgb(233 30 131/.18),transparent 80%),radial-gradient(ellipse 34% 29% at 78% 74%,rgb(6 182 212/.18),transparent 82%),radial-gradient(ellipse 30% 24% at 57% 70%,rgb(37 99 235/.14),transparent 82%),radial-gradient(ellipse 22% 20% at 64% 82%,rgb(220 38 38/.08),transparent 85%),#08090b}
 .cinema-shade{background:radial-gradient(ellipse 46% 30% at 50% 40%,color-mix(in srgb,var(--background) 68%,transparent),transparent 78%),linear-gradient(180deg,color-mix(in srgb,var(--background) 72%,transparent) 0%,transparent 15%),linear-gradient(0deg,var(--background) 0%,transparent 12%)}
 .cinema-orbit{position:absolute;inset:0;pointer-events:none}
 .hero-dots{position:absolute;inset:0}
@@ -728,7 +728,7 @@ h3{font-family:var(--type-display);font-weight:var(--fw-heading);line-height:var
 @media(max-width:700px){.sig+.special-feature>.special-overlay{background:linear-gradient(180deg,var(--background) 0,color-mix(in srgb,var(--background) 74%,transparent) calc(var(--sig-rise) * .38),color-mix(in srgb,var(--background) 32%,transparent) calc(var(--sig-rise) * .72),transparent var(--sig-rise)),linear-gradient(90deg,color-mix(in srgb,var(--background) 78%,transparent),color-mix(in srgb,var(--background) 64%,transparent)),linear-gradient(0deg,var(--background) 0%,color-mix(in srgb,var(--background) 55%,transparent) 14%,transparent 36%)}}
 
 /* ===== Hero: inside the club (HERO-NIGHTCLUB-REBUILD-REPORT.md) =====
-   Inside .cinema-media, back to front: soft warm crowd backlighting (.hero-atmosphere), warm beams from the
+   Inside .cinema-media, back to front: violet/blue crowd backlighting (.hero-atmosphere), coloured beams from the
    ceiling rig, an ember wash and a light sweep (both driven by scroll), then the crowd. .cinema-shade above them keeps
    the headline in shadow and lets the crowd fall into darkness at the foot. All of it is decorative (aria-hidden). */
 /* Ceiling fixtures (final hero refinement). Each beam is a point source: a conic cone whose angle (--ba) is the fixture's,
@@ -746,19 +746,21 @@ h3{font-family:var(--type-display);font-weight:var(--fw-heading);line-height:var
  -webkit-mask-image:linear-gradient(180deg,#000 0%,rgb(0 0 0/.86) 16%,rgb(0 0 0/.66) 40%,rgb(0 0 0/.48) 64%,rgb(0 0 0/.26) 84%,transparent 98%);mask-image:linear-gradient(180deg,#000 0%,rgb(0 0 0/.86) 16%,rgb(0 0 0/.66) 40%,rgb(0 0 0/.48) 64%,rgb(0 0 0/.26) 84%,transparent 98%)}
 .hero-beam i::after{background:radial-gradient(circle 8.5cqh at 50% 0,var(--beam-core),color-mix(in srgb,var(--beam) 34%,transparent) 42%,transparent),conic-gradient(from calc(180deg - var(--half) * .34) at 50% 0,transparent,color-mix(in srgb,var(--beam-core) 62%,transparent) calc(var(--half) * .34),transparent calc(var(--half) * .68));
  -webkit-mask-image:linear-gradient(180deg,#000 0%,rgb(0 0 0/.55) 20%,rgb(0 0 0/.18) 42%,transparent 60%);mask-image:linear-gradient(180deg,#000 0%,rgb(0 0 0/.55) 20%,rgb(0 0 0/.18) 42%,transparent 60%)}
-.hero-beam[data-tone=spot]{--beam-core:color-mix(in srgb,var(--spot-core) 92%,transparent);--beam:var(--spot);--bo:.7}
-.hero-beam[data-tone=amber]{--beam-core:color-mix(in srgb,var(--spot-core) 82%,transparent);--beam:color-mix(in srgb,var(--amber) 72%,var(--spot));--bo:.78}
-.hero-beam[data-tone=ember]{--beam-core:color-mix(in srgb,var(--spot) 80%,transparent);--beam:color-mix(in srgb,var(--glow) 82%,var(--amber));--bo:.72}
-.hero-beam[data-tone=steel]{--beam-core:color-mix(in srgb,color-mix(in srgb,var(--steel) 36%,var(--text)) 72%,transparent);--beam:color-mix(in srgb,var(--steel) 78%,var(--text));--bo:.58}
-.hero-wash{position:absolute;inset:0;pointer-events:none;opacity:0;mix-blend-mode:screen;background:radial-gradient(ellipse 70% 46% at 50% 0%,color-mix(in srgb,var(--glow) 30%,transparent),transparent 74%),radial-gradient(ellipse 40% 34% at 18% 8%,color-mix(in srgb,var(--crimson) 50%,transparent),transparent 72%),radial-gradient(ellipse 40% 34% at 82% 8%,color-mix(in srgb,var(--crimson) 50%,transparent),transparent 72%)}
-.hero-sweep{position:absolute;top:-30%;bottom:30%;left:0;width:30%;pointer-events:none;opacity:0;rotate:14deg;transform:translateX(-140%);filter:blur(28px);mix-blend-mode:screen;background:linear-gradient(90deg,transparent,color-mix(in srgb,var(--spot) 26%,transparent) 40%,color-mix(in srgb,var(--spot-core) 44%,transparent) 50%,color-mix(in srgb,var(--spot) 26%,transparent) 60%,transparent)}
+/* Colour stays local to the hero; the same fixture palette feeds the canvas rim lighting. */
+.hero-beam[data-tone=violet]{--beam:#7C3AED;--beam-core:color-mix(in srgb,#7C3AED 72%,#eee5ff);--bo:.92}
+.hero-beam[data-tone=magenta]{--beam:#E91E83;--beam-core:color-mix(in srgb,#E91E83 72%,#ffe5f4);--bo:.8}
+.hero-beam[data-tone=blue]{--beam:#2563EB;--beam-core:color-mix(in srgb,#2563EB 70%,#dfeaff);--bo:.86}
+.hero-beam[data-tone=red]{--beam:#DC2626;--beam-core:color-mix(in srgb,#DC2626 84%,#ffe2e2);--bo:.34}
+.hero-beam[data-tone=cyan]{--beam:#06B6D4;--beam-core:color-mix(in srgb,#06B6D4 76%,#ddfbff);--bo:.7}
+.hero-wash{position:absolute;inset:0;pointer-events:none;opacity:0;mix-blend-mode:screen;background:radial-gradient(ellipse 70% 46% at 50% 0%,color-mix(in srgb,#7C3AED 25%,transparent),transparent 74%),radial-gradient(ellipse 40% 34% at 18% 8%,color-mix(in srgb,#E91E83 22%,transparent),transparent 72%),radial-gradient(ellipse 40% 34% at 82% 8%,color-mix(in srgb,#2563EB 25%,transparent),transparent 72%)}
+.hero-sweep{position:absolute;top:-30%;bottom:30%;left:0;width:30%;pointer-events:none;opacity:0;rotate:14deg;transform:translateX(-140%);filter:blur(28px);mix-blend-mode:screen;background:linear-gradient(90deg,transparent,color-mix(in srgb,#06B6D4 18%,transparent) 40%,color-mix(in srgb,#c6dfff 28%,transparent) 50%,color-mix(in srgb,#06B6D4 18%,transparent) 60%,transparent)}
 /* A taller club floor; Canvas recalculates proportional figures at each size rather than stretching them. */
 .hero-crowd{position:absolute;left:0;right:0;bottom:0;height:55%;pointer-events:none}
 .hero-crowd canvas{position:absolute;inset:0;display:block;width:100%;height:100%}
 .hero-crowd canvas[data-depth=back]{filter:blur(1px);opacity:.96}
 .hero-crowd canvas[data-depth=near]{filter:blur(3.4px)}
 @media(max-width:1024px){.hero-crowd{height:48%}.hero-beam{--ba-scale:.86}}
-@media(max-width:700px){.hero-crowd{height:49%}.hero-beam[data-tone=steel]{display:none}.hero-beam{--ba-scale:.6}}
+@media(max-width:700px){.hero-crowd{height:49%}.hero-beam[data-tone=red]{display:none}.hero-beam{--ba-scale:.6}}
 
 /* ===== Hero copy (final hero refinement) =====
    Two intentional lines (DEL MAR. / TURN IT UP.), sized by width and height so short laptop screens keep the crowd in

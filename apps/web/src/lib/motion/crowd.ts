@@ -91,13 +91,13 @@ function layout(w: number, h: number, mobile: boolean): {back: Row[]; front: Row
   // Staggered baselines expose the smaller, hazier back row above the middle row; close heads fall into soft,
   // near-black foreground. Back rows carry more raised hands: they read against the light.
   const far = row(mobile ? 0.42 : 0.38, mobile ? 0.67 : 0.75, 0.25,
-    [['down', 0.27], ['drink', 0.08], ['up', 0.07], ['pump', 0.15], ['sway', 0.14], ['reach', 0.1], ['groove', 0.19]],
-    'rgb(31, 25, 24)', [239, 190, 140], 0.38, 0.75, 1, false, 0.3);
+    [['down', 0.2], ['drink', 0.08], ['up', 0.12], ['pump', 0.18], ['sway', 0.14], ['reach', 0.11], ['groove', 0.17]],
+    'rgb(18, 17, 25)', [139, 117, 193], 0.24, 0.82, 1.1, false, 0.36);
   const mid = row(mobile ? 0.62 : 0.58, mobile ? 0.88 : 0.98, 0.30,
-    [['down', 0.3], ['drink', 0.1], ['pump', 0.14], ['up', 0.05], ['sway', 0.15], ['reach', 0.08], ['groove', 0.18]],
-    'rgb(14, 12, 12)', [217, 150, 103], 0.42, 1, 0.85, true, 0.28);
+    [['down', 0.25], ['drink', 0.1], ['pump', 0.16], ['up', 0.09], ['sway', 0.15], ['reach', 0.08], ['groove', 0.17]],
+    'rgb(10, 11, 16)', [104, 131, 173], 0.25, 1, 0.95, true, 0.32);
   const near = row(0.88, mobile ? 1.16 : 1.24, 0.43, [['down', 0.84], ['drink', 0.06], ['groove', 0.07], ['sway', 0.03]],
-    'rgb(5, 5, 6)', [217, 113, 74], 0.16, 0.35, 0.3, false, 0);
+    'rgb(5, 5, 6)', [100, 112, 150], 0.12, 0.35, 0.3, false, 0);
   // A few separated midground hands hold phones (one more far back on wide screens); never floating between figures
   // or outside the viewport.
   const holders: Figure[] = [];
@@ -162,7 +162,7 @@ function drawFigure(ctx: CanvasRenderingContext2D, f: Figure, t: number, energy:
   const rimOffset = Math.max(0.55, s * 0.004);
   const rx = lit.dir * rimOffset * Math.min(1, light) * 0.8, ry = rimOffset * (1 + Math.min(1, light) * 1.8);
   const flash = glint.phone === f.phone && f.phone >= 0 ? glint.strength : 0;
-  // Rim pass: the beam's colour where a beam is behind this person, the room's warm haze elsewhere. Light comes from
+  // Rim pass: the beam's colour where a beam is behind this person, the room's faint cool haze elsewhere. Light comes from
   // above and behind, so the edge is brightest on the head and raised hands and fades out down the shoulders, instead
   // of outlining the whole silhouette.
   ctx.globalAlpha = Math.min(0.95, base + light * 0.72);
@@ -410,19 +410,42 @@ export function createCrowd(host: HTMLElement, {mobile, still = false}: {mobile:
     ctx.restore();
   }
 
+  /** Low-opacity scattering follows the same projected fixtures as the rims, behind all silhouettes.
+   * Uses the existing capped canvas loop; no extra canvas, texture, blur filter or layout sampling. */
+  function haze(ctx: CanvasRenderingContext2D) {
+    if (!prepared.length) return;
+    const y = height * .32;
+    ctx.save();
+    ctx.globalCompositeOperation = 'screen';
+    for (const p of prepared) {
+      const depth = y - p.ay, x = p.ax - depth * p.tanA;
+      const radius = Math.max(width * .13, depth * p.tanH * 2.5);
+      if (x + radius < 0 || x - radius > width) continue;
+      ctx.save(); ctx.translate(x, y); ctx.scale(1, .65);
+      const fog = ctx.createRadialGradient(0, 0, 0, 0, 0, radius);
+      const rgb = p.color.join(',');
+      fog.addColorStop(0, `rgba(${rgb},${p.strength * .18})`);
+      fog.addColorStop(.4, `rgba(${rgb},${p.strength * .07})`);
+      fog.addColorStop(1, `rgba(${rgb},0)`);
+      ctx.fillStyle = fog; ctx.fillRect(-radius, -radius, radius * 2, radius * 2); ctx.restore();
+    }
+    ctx.restore();
+  }
+
   function draw(t: number) {
     if (!width || contexts.length < 2) return;
     const glint = glints(t, !still && energy > 0);
     // One low-cost illumination value for the room's haze, plus the beams actually behind each person.
     const warmth = still ? 0.9 : 0.85 + 0.1 * Math.sin(t * 0.37);
     prepare();
-    const paint = (ctx: CanvasRenderingContext2D, list: Row[]) => {
+    const paint = (ctx: CanvasRenderingContext2D, list: Row[], scatter = false) => {
       ctx.clearRect(0, 0, width, height);
+      if (scatter) haze(ctx);
       ctx.lineCap = 'round';
       ctx.lineJoin = 'round';
       for (const row of list) for (const figure of row.figures) drawFigure(ctx, figure, t, energy, row, glint, warmth, lightOn(figure));
     };
-    paint(contexts[0], rows.back);
+    paint(contexts[0], rows.back, true);
     flash(contexts[0], glint);
     paint(contexts[1], rows.front);
   }

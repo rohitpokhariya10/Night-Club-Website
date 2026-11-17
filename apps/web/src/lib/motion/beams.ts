@@ -32,7 +32,7 @@ export const beamReach = (i: number) => Math.abs(BEAM_PROGRAMS[i].a) + Math.abs(
 export const beamPeakSpeed = (i: number) => 2 * Math.PI * (Math.abs(BEAM_PROGRAMS[i].a) / BEAM_PROGRAMS[i].p + Math.abs(BEAM_PROGRAMS[i].b) / BEAM_PROGRAMS[i].q);
 
 /** Light colours for the crowd's rims, per fixture tone (the CSS beam colours, as plain RGB). */
-const TONES: Record<string, StageLight['color']> = {spot: [246, 206, 160], amber: [232, 150, 104], ember: [228, 100, 72], steel: [146, 176, 196]};
+const TONES: Record<string, StageLight['color']> = {violet: [124, 58, 237], magenta: [233, 30, 131], blue: [37, 99, 235], cyan: [6, 182, 212], red: [220, 38, 38]};
 
 /**
  * Feeds the crowd the beams actually behind it: each fixture's position, its resting + scroll (rig) + idle (light)
@@ -47,7 +47,7 @@ export function crowdLighting(rigs: HTMLElement[], lights: HTMLElement[], field:
       const scale = parseFloat(style.getPropertyValue('--ba-scale')) || 1;
       return {
         x: parseFloat(style.getPropertyValue('--bx')) / 100, rest: parseFloat(style.getPropertyValue('--br')) || 0,
-        half: (parseFloat(style.getPropertyValue('--ba')) || 8) * scale / 2, color: TONES[rig.dataset.tone ?? ''] ?? TONES.spot,
+        half: (parseFloat(style.getPropertyValue('--ba')) || 8) * scale / 2, color: TONES[rig.dataset.tone ?? ''] ?? TONES.violet,
         strength: parseFloat(style.getPropertyValue('--bo')) || 0.6, shown: style.display !== 'none',
       };
     });
